@@ -438,6 +438,7 @@ const USERS = {
   ceo:     { pass:'1234', name:'施總',   role:'ceo', roleLabel:'CEO', store:'總管理', avatar:'施' },
 };
 
+const REJECT_LOG = [];
 const ORDERS = [
   {
     id:'EP250526-001', store:'05民生', emp:'王曉明', empId:'S0052',
@@ -505,7 +506,7 @@ function doLogin() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appScreen').style.display = 'block';
     document.getElementById('sideAvatar').textContent = currentUser.avatar;
-    document.getElementById('sideName').textContent = currentUser.name;
+    document.getElementById('sideName').textContent = currentUser.role === 'store' ? currentUser.store + '店' : currentUser.name;
     document.getElementById('sideRole').textContent = currentUser.roleLabel + (currentUser.store ? ' — ' + currentUser.store : '');
     const defaults = { store:'new', supervisor:'pending_sup', admin:'pending_admin', finance:'finance_review', ceo:'dashboard' };
     currentScreen = defaults[currentUser.role] || 'new';
@@ -553,7 +554,8 @@ const NAV_CONFIG = {
       { id:'pending_admin', icon:'ti-package',      label:'待審核庫存', badge:1 },
       { id:'admin_done',    icon:'ti-circle-check', label:'已放行' },
     ]},
-    { sec:'通知', items:[
+    { sec:'紀錄', items:[
+      { id:'admin_rejected_log', icon:'ti-arrow-back-up', label:'退回紀錄' },
       { id:'notify_log', icon:'ti-bell', label:'通知紀錄' },
     ]},
   ],
@@ -570,6 +572,9 @@ const NAV_CONFIG = {
     ]},
     { sec:'統計', items:[
       { id:'stats', icon:'ti-chart-bar', label:'月報統計' },
+    ]},
+    { sec:'系統設定', items:[
+      { id:'user_mgmt', icon:'ti-users', label:'帳號管理' },
     ]},
   ],
 };
@@ -602,7 +607,7 @@ const SCREEN_TITLES = {
   new:'新增員購申請單', myorders:'我的申請', history:'歷史紀錄',
   pending_sup:'待簽核清單', all_orders:'所有申請',
   pending_admin:'待庫存審核', admin_done:'已放行',
-  notify_log:'通知紀錄', finance_review:'待列印簽核',
+  notify_log:'通知紀錄', finance_review:'待列印簽核', admin_rejected_log:'退回紀錄',
   finance_done:'完成歸檔', dashboard:'系統總覽', stats:'月報統計',
 };
 
@@ -638,8 +643,10 @@ function renderScreen() {
     finance_done: screenFinanceDone,
     dashboard: screenDashboard,
     stats: screenStats,
+    user_mgmt: screenUserMgmt,
     history: screenHistory,
     notify_log: screenNotifyLog,
+    admin_rejected_log: screenAdminRejectedLog,
   };
 
   if (viewingOrder) {
@@ -721,7 +728,7 @@ function screenNew() {
       <thead><tr>
         <th style="width:32px">項</th><th style="width:360px">貨號</th><th>品名</th>
         <th style="width:58px">定價</th><th style="width:65px">員購價</th>
-        <th style="width:42px">數量</th><th style="width:65px">小計</th>
+        <th style="width:65px">數量</th><th style="width:65px">小計</th>
       </tr></thead>
       <tbody>
         ${[1,2,3,4,5,6,7,8].map(n=>`
@@ -835,6 +842,118 @@ function screenFinanceDone() {
   return `<div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>`;
 }
 
+function screenUserMgmt() {
+  const roleLabels = { store:'店長', supervisor:'督導', admin:'行政', finance:'財務', ceo:'CEO' };
+  const rows = Object.entries(USERS).map(([uid, u]) => `
+    <tr>
+      <td>${uid}</td>
+      <td>${u.name}</td>
+      <td>${roleLabels[u.role] || u.role}</td>
+      <td>${u.store}</td>
+      <td>${u.empId || '—'}</td>
+      <td>
+        <button class="btn btn-sm" onclick="editUser('${uid}')" style="padding:3px 10px;font-size:11px;margin-right:4px"><i class="ti ti-edit"></i> 編輯</button>
+        ${uid !== 'ceo' ? `<button class="btn btn-sm btn-danger-outline" onclick="deleteUser('${uid}')" style="padding:3px 10px;font-size:11px"><i class="ti ti-trash"></i> 刪除</button>` : ''}
+      </td>
+    </tr>`).join('');
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h2 style="font-size:16px;font-weight:700;color:var(--sf-navy)">帳號管理</h2>
+      <button class="btn btn-primary" onclick="showAddUser()"><i class="ti ti-plus"></i> 新增帳號</button>
+    </div>
+    <div style="background:#fff;border:1px solid var(--sf-border);border-radius:10px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#E8F0FB;color:var(--sf-navy)">
+          <th style="padding:10px 14px;text-align:left;font-weight:600">帳號</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">姓名</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">角色</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">店別/部門</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">員工編號</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">操作</th>
+        </tr></thead>
+        <tbody id="userTableBody">${rows}</tbody>
+      </table>
+    </div>
+    <div id="userModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;display:none;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:12px;padding:24px;width:380px;max-width:90vw">
+        <h3 id="modalTitle" style="font-size:15px;font-weight:700;color:var(--sf-navy);margin-bottom:16px">新增帳號</h3>
+        <input type="hidden" id="editUid">
+        <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">帳號 ID</label>
+          <input id="fUid" class="finput" placeholder="例：store05"></div>
+        <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">姓名</label>
+          <input id="fName" class="finput" placeholder="例：王店長"></div>
+        <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">密碼</label>
+          <input id="fPass" class="finput" placeholder="預設1234"></div>
+        <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">角色</label>
+          <select id="fRole" class="finput">
+            <option value="store">店長</option>
+            <option value="supervisor">督導</option>
+            <option value="admin">行政</option>
+            <option value="finance">財務</option>
+          </select></div>
+        <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">店別/部門</label>
+          <input id="fStore" class="finput" placeholder="例：05民生"></div>
+        <div style="margin-bottom:16px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">員工編號</label>
+          <input id="fEmpId" class="finput" placeholder="例：S0052"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" onclick="closeUserModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveUser()">儲存</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function showAddUser() {
+  document.getElementById('modalTitle').textContent = '新增帳號';
+  document.getElementById('editUid').value = '';
+  document.getElementById('fUid').value = '';
+  document.getElementById('fUid').disabled = false;
+  document.getElementById('fName').value = '';
+  document.getElementById('fPass').value = '1234';
+  document.getElementById('fRole').value = 'store';
+  document.getElementById('fStore').value = '';
+  document.getElementById('fEmpId').value = '';
+  document.getElementById('userModal').style.display = 'flex';
+}
+
+function editUser(uid) {
+  const u = USERS[uid];
+  document.getElementById('modalTitle').textContent = '編輯帳號';
+  document.getElementById('editUid').value = uid;
+  document.getElementById('fUid').value = uid;
+  document.getElementById('fUid').disabled = true;
+  document.getElementById('fName').value = u.name;
+  document.getElementById('fPass').value = u.pass;
+  document.getElementById('fRole').value = u.role;
+  document.getElementById('fStore').value = u.store;
+  document.getElementById('fEmpId').value = u.empId || '';
+  document.getElementById('userModal').style.display = 'flex';
+}
+
+function closeUserModal() {
+  document.getElementById('userModal').style.display = 'none';
+}
+
+function saveUser() {
+  const editUid = document.getElementById('editUid').value;
+  const uid = editUid || document.getElementById('fUid').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const pass = document.getElementById('fPass').value.trim() || '1234';
+  const role = document.getElementById('fRole').value;
+  const store = document.getElementById('fStore').value.trim();
+  const empId = document.getElementById('fEmpId').value.trim();
+  if (!uid || !name || !store) { alert('帳號、姓名、店別為必填'); return; }
+  USERS[uid] = { pass, name, role, roleLabel: {store:'店長',supervisor:'督導',admin:'行政',finance:'財務'}[role]||role, store, empId, avatar: name[0] };
+  closeUserModal();
+  goScreen('user_mgmt');
+}
+
+function deleteUser(uid) {
+  if (!confirm(`確定要刪除帳號「${uid}」？`)) return;
+  delete USERS[uid];
+  goScreen('user_mgmt');
+}
+
 function screenDashboard() {
   const total = ORDERS.reduce((s,o)=>s+o.total,0);
   return `
@@ -859,6 +978,41 @@ function screenStats() {
 
 function screenHistory() {
   return `<div class="order-list">${ORDERS.filter(o=>o.store===currentUser.store).map(o=>orderCardHtml(o)).join('')}</div>`;
+}
+
+function screenAdminRejectedLog() {
+  if (!REJECT_LOG.length) return `
+    <div style="padding:40px;text-align:center;color:var(--sf-text-muted)">
+      <i class="ti ti-check" style="font-size:32px;display:block;margin-bottom:8px"></i>
+      目前沒有退回紀錄
+    </div>`;
+  return `
+    <h2 style="font-size:16px;font-weight:700;color:var(--sf-navy);margin-bottom:14px">退回紀錄</h2>
+    <div style="background:#fff;border:1px solid var(--sf-border);border-radius:10px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#FEE2E2;color:#9B1C1C">
+          <th style="padding:10px 14px;text-align:left;font-weight:600">申請單號</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">門市</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">申購者</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">金額</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">退回人</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">退回原因</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600">時間</th>
+        </tr></thead>
+        <tbody>
+          ${REJECT_LOG.map((r,i) => `
+          <tr style="border-top:1px solid var(--sf-border);${i%2===1?'background:#FFF7F7':''}">
+            <td style="padding:9px 14px;color:var(--sf-accent);font-weight:600">${r.orderId}</td>
+            <td style="padding:9px 14px">${r.store}店</td>
+            <td style="padding:9px 14px">${r.emp}</td>
+            <td style="padding:9px 14px">NT$ ${r.total.toLocaleString()}</td>
+            <td style="padding:9px 14px">${r.rejectedBy}（${r.rejectedRole}）</td>
+            <td style="padding:9px 14px;color:#DC2626">${r.reason}</td>
+            <td style="padding:9px 14px;color:var(--sf-text-muted)">${r.time}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function screenNotifyLog() {
@@ -917,7 +1071,7 @@ function screenOrderDetail(o) {
         <thead><tr>
           <th style="width:32px">項</th><th style="width:90px">貨號</th><th>品名</th>
           <th style="width:68px">定價</th><th style="width:72px">員購價</th>
-          <th style="width:42px">數量</th><th style="width:80px">小計</th>
+          <th style="width:65px">數量</th><th style="width:80px">小計</th>
         </tr></thead>
         <tbody>
           ${itemRows}
@@ -1061,7 +1215,7 @@ function doSubmitNew() {
     }
   });
 
-  if (!confirm(`確定要提交申請單？\n\n申購者：${empName}（${empId}）\n店主管：${managerName}\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
+  if (!confirm(`確定要提交申請單？\n\n店別：${currentUser.store}店\n申購者：${empName}（${empId}）\n店主管：${managerName}\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
 
   const newId = 'EP' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(ORDERS.length+1).padStart(3,'0');
   const newOrder = {
@@ -1094,6 +1248,17 @@ function doDeleteOrder(id) {
 function doReject(id) {
   const o = ORDERS.find(x => x.id === id);
   if (!o) return;
+  const reason = prompt(`請輸入退回原因（申請單 ${id}）：`) || '未填寫原因';
+  REJECT_LOG.unshift({
+    orderId: id,
+    store: o.store,
+    emp: o.emp,
+    total: o.total,
+    rejectedBy: currentUser.name,
+    rejectedRole: currentUser.roleLabel,
+    reason: reason,
+    time: new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})
+  });
   o.status = 'rejected';
   o.supSign = '';
   o.adminSign = '';
@@ -1219,7 +1384,7 @@ function doPrint(id) {
   <div class="info-field"><div class="info-key">員工編號</div><div class="info-val">${o.empId}</div></div>
 </div>
 <table>
-  <thead><tr><th style="width:28px">項</th><th style="width:80px">貨號</th><th>品名</th><th style="width:65px">定價</th><th style="width:72px">員購價</th><th style="width:40px">數量</th><th style="width:75px">小計</th></tr></thead>
+  <thead><tr><th style="width:28px">項</th><th style="width:80px">貨號</th><th>品名</th><th style="width:65px">定價</th><th style="width:72px">員購價</th><th style="width:65px">數量</th><th style="width:75px">小計</th></tr></thead>
   <tbody>
     ${itemRows}
     <tr class="tot"><td colspan="5" style="text-align:right">合計金額</td><td></td><td>NT$ ${o.total.toLocaleString()}</td></tr>
