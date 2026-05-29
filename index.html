@@ -706,12 +706,12 @@ function screenNew() {
     <div class="form-grid">
       <div class="ff"><label class="flabel">門市</label><input class="finput" value="${currentUser.store}" readonly></div>
       <div class="ff"><label class="flabel">申購日期</label><input class="finput" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
-      <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" id="empName" value="${currentUser.name}" placeholder="請輸入申購者姓名"></div>
-      <div class="ff"><label class="flabel">申購者員工編號</label><input class="finput" id="empId" value="${currentUser.empId||''}" placeholder="請輸入員工編號"></div>
+      <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" id="empName" placeholder="請輸入申購者姓名"></div>
+      <div class="ff"><label class="flabel">申購者員工編號</label><input class="finput" id="empId" placeholder="請輸入員工編號"></div>
       <div class="ff"><label class="flabel">店主管姓名</label><input class="finput" id="managerName" placeholder="請輸入店主管姓名"></div>
       <div class="ff"><label class="flabel">店主管員工編號</label><input class="finput" id="managerId" placeholder="請輸入店主管員工編號"></div>
     </div>
-    <table class="items-table">
+    <table class="items-table" id="itemsTable">
       <thead><tr>
         <th style="width:32px">項</th><th style="width:360px">貨號</th><th>品名</th>
         <th style="width:58px">定價</th><th style="width:65px">員購價</th>
@@ -721,14 +721,14 @@ function screenNew() {
         ${[1,2,3,4,5,6,7,8].map(n=>`
         <tr>
           <td style="color:var(--sf-text-light)">${n}</td>
-          <td><input placeholder="貨號"></td>
+          <td><input placeholder="貨號" maxlength="10" oninput="calcRow(this)"></td>
           <td><input placeholder="品名"></td>
-          <td><input placeholder="0"></td>
-          <td><input placeholder="0"></td>
-          <td><input placeholder="0"></td>
-          <td class="amount"></td>
+          <td><input placeholder="0" type="number" min="0" oninput="calcRow(this)"></td>
+          <td><input placeholder="0" type="number" min="0" oninput="calcRow(this)"></td>
+          <td><input placeholder="0" type="number" min="0" oninput="calcRow(this)"></td>
+          <td class="amount" id="sub${n}">NT$ 0</td>
         </tr>`).join('')}
-        <tr class="total-row"><td colspan="5" style="text-align:right">合計金額</td><td></td><td class="amount">NT$ 0</td></tr>
+        <tr class="total-row"><td colspan="5" style="text-align:right">合計金額</td><td></td><td class="amount" id="grandTotal">NT$ 0</td></tr>
       </tbody>
     </table>
     <div style="background:var(--sf-blue-light);border:1px solid var(--sf-border);border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--sf-text);">
@@ -741,8 +741,8 @@ function screenNew() {
         長袖內衣→<strong>200元</strong> ／
         長袖彩T→<strong>280元</strong> ／
         機能衣→<strong>350元</strong> ／
-        290元毛擺→<strong>120元</strong> ／
-        機能商品→<strong>定價7折</strong><br>
+        290元毛襪→<strong>120元</strong> ／
+        樂齡商品→<strong>定價7折</strong><br>
         襪子：[8雙$500]→<strong>50元</strong>、[8雙$1,000]→<strong>100元</strong>、[6雙$1,000]→<strong>150元</strong><br>
         其他商品→<strong>定價7折</strong>（特價品、髮飾不開放員購）
       </div>
@@ -941,7 +941,7 @@ function renderActionBar() {
   if (currentScreen === 'new') {
     return `
       <button class="btn" style="margin-right:auto"><i class="ti ti-device-floppy"></i> 儲存草稿</button>
-      <button class="btn btn-primary"><i class="ti ti-send"></i> 提交申請</button>
+      <button class="btn btn-primary" onclick="doSubmitNew()"><i class="ti ti-send"></i> 提交申請</button>
     `;
   }
   return '';
@@ -987,8 +987,58 @@ function renderDetailActions() {
 }
 
 // ============================================================
-// ACTIONS
+// CALC ROW & SUBMIT
 // ============================================================
+function calcRow(el) {
+  const row = el.closest('tr');
+  const inputs = row.querySelectorAll('input[type="number"]');
+  const memberPrice = parseFloat(inputs[1]?.value) || 0;
+  const qty = parseFloat(inputs[2]?.value) || 0;
+  const sub = memberPrice * qty;
+  const rowIndex = row.rowIndex;
+  const subEl = document.getElementById('sub' + rowIndex);
+  if (subEl) subEl.textContent = 'NT$ ' + sub.toLocaleString();
+  let grand = 0;
+  for (let i = 1; i <= 8; i++) {
+    const s = document.getElementById('sub' + i);
+    if (s) grand += parseInt(s.textContent.replace(/[^0-9]/g,'')) || 0;
+  }
+  const gt = document.getElementById('grandTotal');
+  if (gt) gt.textContent = 'NT$ ' + grand.toLocaleString();
+}
+
+function doSubmitNew() {
+  const empName = document.getElementById('empName')?.value?.trim();
+  const empId = document.getElementById('empId')?.value?.trim();
+  const managerName = document.getElementById('managerName')?.value?.trim();
+  if (!empName) { alert('請填寫申購者姓名'); return; }
+  if (!empId) { alert('請填寫申購者員工編號'); return; }
+  if (!managerName) { alert('請填寫店主管姓名'); return; }
+  const total = parseInt(document.getElementById('grandTotal')?.textContent.replace(/[^0-9]/g,'')) || 0;
+  if (total === 0) { alert('請至少填寫一項商品'); return; }
+  const newId = 'EP' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(ORDERS.length+1).padStart(3,'0');
+  const newOrder = {
+    id: newId,
+    store: currentUser.store,
+    emp: empName,
+    empId: empId,
+    manager: managerName,
+    date: new Date().toLocaleDateString('zh-TW'),
+    status: 'pending_sup',
+    total: total,
+    items: [],
+    supSign: '', adminSign: '', finSign: '', invoice: ''
+  };
+  ORDERS.unshift(newOrder);
+  document.getElementById('actionBar').innerHTML = `
+    <div class="notify-bar" style="flex:1">
+      <i class="ti ti-circle-check"></i>
+      <div><strong>提交成功！</strong>申請單 ${newId} 已送出，系統已自動通知督導進行線上簽核。</div>
+    </div>`;
+  goScreen('myorders');
+}
+
+
 function doReject(id) {
   const o = ORDERS.find(x => x.id === id);
   if (!o) return;
@@ -1129,7 +1179,7 @@ function doPrint(id) {
   <div class="sig-box"><div class="sig-lbl">發票號碼</div><div class="sig-val">${o.invoice||'&nbsp;'}</div></div>
 </div>
 <div class="notes">
-  1.【員購價格】平口褲 6件$1,000→150元、5件$1,000→175元；短/無袖內衣150元；短袖彩T200元；衛生褲200元；長袖內衣200元；長袖彩T280元；機能衣350元；290元毛擺120元；機能商品七折；[8雙500]50元、[8雙1,000]100元、[6雙1,000]150元；其他商品定價7折（特價品、髮飾不開放員購）<br>
+  1.【員購價格】平口褲 6件$1,000→150元、5件$1,000→175元；短/無袖內衣150元；短袖彩T200元；衛生褲200元；長袖內衣200元；長袖彩T280元；機能衣350元；290元毛襪120元；樂齡商品七折；[8雙500]50元、[8雙1,000]100元、[6雙1,000]150元；其他商品定價7折（特價品、髮飾不開放員購）<br>
   2.【員購規則】單月員購價加總不得超過 NT$3,000，不可購買非當季商品<br>
   3.【支付方式】匯款，銀行代碼 013，帳號 0700035031888<br>
   4.【流程說明】本單須經督導線上簽核 → 行政確認庫存 → 通知取貨 → 財務紙本歸檔
