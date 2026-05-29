@@ -839,6 +839,22 @@ function screenFinanceDone() {
   return `<div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>`;
 }
 
+async function initDatabase() {
+  if (!confirm('確定要將目前所有資料（帳號、申請單、退回紀錄）全部寫入 Google Sheets？\n\n這會覆蓋 Sheets 上的現有資料。')) return;
+  showLoading(true);
+  try {
+    await saveUsers();
+    await saveOrders();
+    await saveRejectLog();
+    showLoading(false);
+    alert('✅ 初始化完成！所有資料已成功寫入 Google Sheets。');
+    goScreen('user_mgmt');
+  } catch(e) {
+    showLoading(false);
+    alert('❌ 初始化失敗，請檢查網路連線後重試。');
+  }
+}
+
 function screenUserMgmt() {
   const roleLabels = { store:'店長', supervisor:'督導', admin:'行政', finance:'財務', ceo:'系統管理員' };
   const rows = Object.entries(USERS).map(([uid, u]) => `
@@ -856,7 +872,10 @@ function screenUserMgmt() {
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h2 style="font-size:16px;font-weight:700;color:var(--sf-navy)">帳號管理</h2>
-      <button class="btn btn-primary" onclick="showAddUser()"><i class="ti ti-plus"></i> 新增帳號</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="initDatabase()" style="background:#F0FDF4;color:#166534;border:1px solid #86EFAC;font-size:12px"><i class="ti ti-database-import"></i> 初始化資料庫</button>
+        <button class="btn btn-primary" onclick="showAddUser()"><i class="ti ti-plus"></i> 新增帳號</button>
+      </div>
     </div>
     <div style="background:#fff;border:1px solid var(--sf-border);border-radius:10px;overflow:hidden">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
