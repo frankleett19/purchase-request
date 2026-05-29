@@ -435,19 +435,20 @@ let dataLoaded = false;
 
 function gasCallJsonp(params) {
   return new Promise((resolve) => {
-    const cbName = 'gasCallback_' + Date.now();
+    const cbName = 'gasCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     window[cbName] = function(data) {
       resolve(data);
       delete window[cbName];
-      document.getElementById(cbName) && document.getElementById(cbName).remove();
+      const el = document.getElementById(cbName);
+      if (el) el.remove();
     };
-    const qs = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v)).join('&');
+    const qs = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : String(v))).join('&');
     const script = document.createElement('script');
     script.id = cbName;
     script.src = GAS_URL + '?' + qs + '&callback=' + cbName;
     script.onerror = () => { resolve({ ok: true }); delete window[cbName]; script.remove(); };
     document.head.appendChild(script);
-    setTimeout(() => { resolve({ ok: true }); }, 10000);
+    setTimeout(() => { resolve({ ok: true }); }, 15000);
   });
 }
 
@@ -473,14 +474,33 @@ async function loadFromSheets() {
 }
 
 async function saveUsers() {
-  await gasCall({ action: 'saveUsers', data: JSON.stringify(USERS) });
+  // 壓縮：只存必要欄位
+  const compact = {};
+  Object.entries(USERS).forEach(([k,v]) => { compact[k] = v; });
+  await gasCall({ action: 'saveUsers', data: JSON.stringify(compact) });
 }
+
 async function saveOrders() {
-  await gasCall({ action: 'saveOrders', data: JSON.stringify(ORDERS) });
+  // 分批：每次只存單筆最新的，然後全部重存
+  const data = JSON.stringify(ORDERS);
+  if (data.length < 6000) {
+    await gasCall({ action: 'saveOrders', data: data });
+  } else {
+    // 資料太大，分批每5筆存一次
+    for (let i = 0; i < ORDERS.length; i += 5) {
+      const batch = ORDERS.slice(i, i + 5);
+      await gasCall({ action: 'saveOrdersBatch', start: i, data: JSON.stringify(batch), total: ORDERS.length });
+    }
+  }
 }
+
 async function saveRejectLog() {
-  await gasCall({ action: 'saveRejectLog', data: JSON.stringify(REJECT_LOG) });
+  const data = JSON.stringify(REJECT_LOG);
+  if (data.length < 6000) {
+    await gasCall({ action: 'saveRejectLog', data: data });
+  }
 }
+
 
 function showLoading(show) {
   const el = document.getElementById('loadingOverlay');
