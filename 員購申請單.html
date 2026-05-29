@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三花生活館 — 員購申請管理系統</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root {
+  --sf-navy: #00337A;
+  --sf-navy-dark: #002060;
+  --sf-navy-mid: #1A4F9C;
+  --sf-blue-light: #E8F0FB;
+  --sf-blue-mid: #B3CCF0;
+  --sf-accent: #1976D2;
+  --sf-white: #FFFFFF;
+  --sf-gray-bg: #F4F7FC;
+  --sf-border: #C8D8EE;
+  --sf-text: #1A2B4A;
+  --sf-text-muted: #5A6E8A;
+  --sf-text-light: #8FA3BC;
+  --sf-success: #1B6B3A;
+  --sf-success-bg: #E6F4EC;
+  --sf-warn: #B45309;
+  --sf-warn-bg: #FEF3C7;
+  --sf-danger: #9B1C1C;
+  --sf-danger-bg: #FEE2E2;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Microsoft JhengHei', 'PingFang TC', Arial, sans-serif;
+  background: var(--sf-gray-bg);
+  color: var(--sf-text);
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ========== LOGIN ========== */
+.login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(145deg, var(--sf-navy-dark) 0%, var(--sf-navy-mid) 100%);
+}
+.login-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 36px 32px;
+  width: 340px;
+  box-shadow: 0 8px 40px rgba(0,48,122,0.22);
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+.login-logo-box {
+  width: 46px; height: 46px;
+  background: var(--sf-navy);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 15px; letter-spacing: 1px;
+}
+.login-logo-text { font-size: 15px; font-weight: 700; color: var(--sf-navy); line-height: 1.3; }
+.login-title { font-size: 18px; font-weight: 700; color: var(--sf-navy); text-align: center; margin-bottom: 4px; }
+.login-sub { font-size: 12px; color: var(--sf-text-muted); text-align: center; margin-bottom: 22px; }
+.login-field { margin-bottom: 13px; }
+.login-label { font-size: 12px; color: var(--sf-text-muted); margin-bottom: 5px; font-weight: 600; display: block; }
+.login-input {
+  width: 100%; padding: 9px 11px;
+  border: 1px solid var(--sf-border);
+  border-radius: 8px; font-size: 13px;
+  color: var(--sf-text); background: #fff; outline: none;
+  transition: border-color .15s;
+}
+.login-input:focus { border-color: var(--sf-accent); }
+.login-btn {
+  width: 100%; padding: 10px;
+  background: var(--sf-navy); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  margin-top: 4px; transition: background .15s;
+}
+.login-btn:hover { background: var(--sf-navy-dark); }
+.login-demo { margin-top: 16px; background: var(--sf-blue-light); border-radius: 8px; padding: 11px 13px; }
+.login-demo-title { font-size: 11px; font-weight: 700; color: var(--sf-navy); margin-bottom: 7px; }
+.demo-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 4px; cursor: pointer; border-radius: 6px;
+  transition: background .1s;
+}
+.demo-item:hover { background: var(--sf-blue-mid); }
+.demo-role { font-size: 11px; color: var(--sf-text-muted); width: 75px; }
+.demo-cred { font-size: 11px; color: var(--sf-navy); font-family: 'Courier New', monospace; flex: 1; }
+.demo-badge { font-size: 10px; padding: 1px 7px; border-radius: 9px; font-weight: 600; }
+.badge-store { background: #DBEAFE; color: #1E40AF; }
+.badge-sup { background: #EDE9FE; color: #5B21B6; }
+.badge-admin { background: #DCFCE7; color: #166534; }
+.badge-fin { background: #FEF3C7; color: #92400E; }
+.badge-ceo { background: #FFE4E6; color: #9F1239; }
+.login-err { font-size: 12px; color: #DC2626; text-align: center; margin-top: 9px; display: none; }
+
+/* ========== APP LAYOUT ========== */
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ========== SIDEBAR ========== */
+.sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--sf-navy);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; gap: 10px;
+}
+.sl-icon {
+  width: 36px; height: 36px; background: #fff;
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  color: var(--sf-navy); font-weight: 700; font-size: 14px; letter-spacing: .5px;
+  flex-shrink: 0;
+}
+.sl-text { color: #fff; font-size: 13px; font-weight: 700; line-height: 1.35; }
+.sl-text span { font-size: 10.5px; opacity: .65; font-weight: 400; }
+.sidebar-user {
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; gap: 9px;
+}
+.user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { color: rgba(255,255,255,0.55); font-size: 10.5px; }
+.logout-btn { color: rgba(255,255,255,0.5); cursor: pointer; font-size: 16px; padding: 4px; transition: color .15s; }
+.logout-btn:hover { color: #fff; }
+.nav-group { padding: 7px 0; }
+.nav-group-label { font-size: 10px; color: rgba(255,255,255,0.4); padding: 5px 18px 3px; text-transform: uppercase; letter-spacing: .07em; }
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 18px; font-size: 13px;
+  color: rgba(255,255,255,0.72);
+  cursor: pointer; border-left: 3px solid transparent;
+  transition: all .15s;
+}
+.nav-item:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.nav-item.active { background: rgba(255,255,255,0.15); color: #fff; border-left-color: #fff; font-weight: 600; }
+.nav-item .ti { font-size: 16px; }
+.badge-count {
+  margin-left: auto;
+  background: rgba(255,120,50,0.92); color: #fff;
+  border-radius: 9px; font-size: 10.5px; padding: 1px 7px; font-weight: 700;
+}
+
+/* ========== MAIN ========== */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--sf-gray-bg); }
+.topbar {
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--sf-border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; flex-shrink: 0;
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.back-btn { color: var(--sf-accent); cursor: pointer; font-size: 16px; display: flex; align-items: center; padding: 3px; }
+.topbar-title { font-size: 16px; font-weight: 700; color: var(--sf-navy); }
+.topbar-sub { font-size: 11.5px; color: var(--sf-text-muted); }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+.content { padding: 18px 22px; flex: 1; overflow-y: auto; }
+.action-bar {
+  padding: 12px 22px;
+  border-top: 1px solid var(--sf-border);
+  background: #fff; display: flex; gap: 8px; align-items: center;
+  flex-shrink: 0;
+}
+
+/* ========== BUTTONS ========== */
+.btn {
+  padding: 7px 15px; border-radius: 8px; font-size: 12.5px;
+  cursor: pointer; border: 1px solid var(--sf-border);
+  background: #fff; color: var(--sf-text);
+  transition: all .15s; display: inline-flex; align-items: center; gap: 5px;
+  font-family: inherit; white-space: nowrap;
+}
+.btn:hover { background: var(--sf-blue-light); border-color: var(--sf-blue-mid); }
+.btn-primary { background: var(--sf-navy); color: #fff; border-color: var(--sf-navy); }
+.btn-primary:hover { background: var(--sf-navy-dark); }
+.btn-success { background: var(--sf-success); color: #fff; border-color: var(--sf-success); }
+.btn-success:hover { background: #144d2a; }
+.btn-danger-outline { color: var(--sf-danger); border-color: var(--sf-danger); }
+.btn-danger-outline:hover { background: var(--sf-danger-bg); }
+.btn-print { background: var(--sf-accent); color: #fff; border-color: var(--sf-accent); }
+.btn-print:hover { background: #1358a0; }
+
+/* ========== STATS ========== */
+.stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+.stat-card { background: #fff; border: 1px solid var(--sf-border); border-radius: 10px; padding: 14px 16px; }
+.stat-card.hl { border-left: 3px solid var(--sf-navy); }
+.stat-num { font-size: 24px; font-weight: 700; color: var(--sf-navy); }
+.stat-lbl { font-size: 11.5px; color: var(--sf-text-muted); margin-top: 3px; }
+
+/* ========== ORDER LIST ========== */
+.order-list { display: flex; flex-direction: column; gap: 9px; }
+.order-card {
+  background: #fff; border: 1px solid var(--sf-border);
+  border-radius: 10px; padding: 12px 15px;
+  cursor: pointer; transition: all .15s;
+}
+.order-card:hover { border-color: var(--sf-blue-mid); box-shadow: 0 2px 10px rgba(0,51,122,0.08); }
+.oc-top { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; flex-wrap: wrap; }
+.oc-id { font-size: 13px; font-weight: 700; color: var(--sf-navy); }
+.oc-store { font-size: 12px; color: var(--sf-text-muted); }
+.oc-items { font-size: 12.5px; color: var(--sf-text-muted); margin-bottom: 5px; }
+.oc-meta { display: flex; gap: 14px; font-size: 11.5px; color: var(--sf-text-light); }
+.oc-click { font-size: 11.5px; color: var(--sf-accent); margin-top: 5px; }
+
+/* ========== STATUS BADGES ========== */
+.sbadge { font-size: 11px; padding: 2px 9px; border-radius: 9px; font-weight: 600; margin-left: auto; white-space: nowrap; }
+.s-draft { background: #F1F5F9; color: #64748B; }
+.s-pending-sup { background: #FEF3C7; color: #92400E; }
+.s-pending-admin { background: #DBEAFE; color: #1E40AF; }
+.s-ready { background: #D1FAE5; color: #065F46; }
+.s-approved { background: #E0E7FF; color: #3730A3; }
+
+/* ========== ALERTS ========== */
+.alert { border-radius: 9px; padding: 11px 13px; font-size: 12.5px; margin-bottom: 13px; display: flex; align-items: flex-start; gap: 9px; }
+.alert .ti { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+.alert-info { background: var(--sf-blue-light); color: var(--sf-navy); }
+.alert-success { background: var(--sf-success-bg); color: var(--sf-success); }
+.alert-warn { background: var(--sf-warn-bg); color: var(--sf-warn); }
+
+/* ========== FLOW BAR ========== */
+.flow-bar {
+  display: flex; align-items: center;
+  background: #fff; border: 1px solid var(--sf-border);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 14px;
+}
+.fstep { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.fdot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.fdot.done { background: var(--sf-success); color: #fff; }
+.fdot.cur { background: var(--sf-navy); color: #fff; }
+.fdot.todo { background: #E2E8F0; color: #94A3B8; }
+.fstep-lbl { font-size: 10.5px; color: var(--sf-text-muted); text-align: center; white-space: nowrap; }
+.farrow { color: var(--sf-border); font-size: 16px; margin-top: -12px; padding: 0 4px; }
+
+/* ========== FORM ========== */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 15px; }
+.ff { display: flex; flex-direction: column; gap: 4px; }
+.ff.full { grid-column: 1 / -1; }
+.flabel { font-size: 12px; color: var(--sf-text-muted); font-weight: 600; }
+.finput {
+  padding: 8px 11px; border: 1px solid var(--sf-border);
+  border-radius: 8px; font-size: 13px; color: var(--sf-text);
+  background: #fff; outline: none; transition: border-color .15s;
+  font-family: inherit;
+}
+.finput:focus { border-color: var(--sf-accent); }
+.finput[readonly], .finput[disabled] { background: var(--sf-gray-bg); color: var(--sf-text-muted); }
+select.finput { cursor: pointer; }
+
+/* ========== ITEMS TABLE ========== */
+.items-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 13px; background: #fff; border-radius: 9px; overflow: hidden; border: 1px solid var(--sf-border); }
+.items-table th { background: var(--sf-navy); color: #fff; padding: 8px 9px; text-align: left; font-weight: 600; font-size: 11.5px; }
+.items-table td { padding: 7px 9px; border-bottom: 1px solid var(--sf-border); color: var(--sf-text); }
+.items-table td input { width: 100%; border: none; background: transparent; font-size: 12.5px; color: var(--sf-text); padding: 0; outline: none; font-family: inherit; }
+.items-table td.amount { color: var(--sf-accent); font-weight: 600; }
+.items-table tr.total-row td { background: var(--sf-blue-light); font-weight: 700; color: var(--sf-navy); border-bottom: none; }
+
+/* ========== PAYMENT BOX ========== */
+.payment-box {
+  background: var(--sf-blue-light); border: 1px solid var(--sf-blue-mid);
+  border-radius: 9px; padding: 11px 14px; font-size: 12.5px;
+  color: var(--sf-navy); margin-bottom: 14px;
+}
+.payment-box .pb-label { font-size: 11px; color: var(--sf-text-muted); margin-bottom: 5px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.payment-box .pb-account { font-size: 15px; font-weight: 700; letter-spacing: 1.5px; }
+.payment-box .pb-note { font-size: 11px; color: var(--sf-text-muted); margin-top: 4px; }
+
+/* ========== SIG ROW ========== */
+.sig-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-top: 13px; }
+.sig-box { border: 1px solid var(--sf-border); border-radius: 9px; padding: 9px 11px; text-align: center; }
+.sig-box-lbl { font-size: 10.5px; color: var(--sf-text-muted); margin-bottom: 14px; line-height: 1.4; }
+.sig-box-val { border-top: 1px solid var(--sf-border); padding-top: 5px; font-size: 10.5px; color: var(--sf-text-light); line-height: 1.4; }
+.sig-box.done { border-color: #4ADE80; }
+.sig-box.done .sig-box-val { color: var(--sf-success); }
+.sig-box.waiting { border-color: var(--sf-navy); border-style: dashed; }
+.sig-box.waiting .sig-box-val { color: var(--sf-navy); }
+
+/* ========== DETAIL SECTION ========== */
+.detail-section { background: #fff; border: 1px solid var(--sf-border); border-radius: 10px; padding: 15px 18px; margin-bottom: 13px; }
+.ds-title { font-size: 13px; font-weight: 700; color: var(--sf-navy); margin-bottom: 11px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--sf-border); padding-bottom: 9px; }
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+.kv-key { font-size: 11px; color: var(--sf-text-muted); margin-bottom: 2px; }
+.kv-val { font-size: 13px; color: var(--sf-text); font-weight: 600; }
+
+/* ========== NOTIFY BAR ========== */
+.notify-bar {
+  background: var(--sf-success-bg); border: 1px solid #86EFAC;
+  border-radius: 9px; padding: 11px 13px; font-size: 12.5px;
+  color: var(--sf-success); display: flex; gap: 9px; align-items: flex-start;
+}
+.notify-bar .ti { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* ========== SECTION TITLE ========== */
+.section-title { font-size: 11.5px; font-weight: 700; color: var(--sf-text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  body * { visibility: hidden; }
+  #printContent, #printContent * { visibility: visible; }
+  #printContent { position: fixed; top: 0; left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="loginScreen">
+  <div class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-box">SF</div>
+        <div class="login-logo-text">三花生活館<br>員購管理系統</div>
+      </div>
+      <div class="login-title">登入帳號</div>
+      <div class="login-sub">請輸入您的帳號與密碼</div>
+      <div class="login-field">
+        <label class="login-label" for="loginUser">帳號</label>
+        <input class="login-input" id="loginUser" placeholder="請輸入帳號" value="store01" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label class="login-label" for="loginPass">密碼</label>
+        <input class="login-input" type="password" id="loginPass" placeholder="請輸入密碼" value="1234" autocomplete="current-password">
+      </div>
+      <button class="login-btn" onclick="doLogin()">登入</button>
+      <div class="login-err" id="loginErr">帳號或密碼錯誤，請再試一次</div>
+      <div class="login-demo">
+        <div class="login-demo-title">演示帳號（點擊快速填入）</div>
+        <div class="demo-item" onclick="fillLogin('store01','1234')">
+          <span class="demo-role">🏪 店長</span>
+          <span class="demo-cred">store01 / 1234</span>
+          <span class="demo-badge badge-store">民生店</span>
+        </div>
+        <div class="demo-item" onclick="fillLogin('sup01','1234')">
+          <span class="demo-role">📋 督導</span>
+          <span class="demo-cred">sup01 / 1234</span>
+          <span class="demo-badge badge-sup">北區</span>
+        </div>
+        <div class="demo-item" onclick="fillLogin('admin01','1234')">
+          <span class="demo-role">🗂 行政</span>
+          <span class="demo-cred">admin01 / 1234</span>
+          <span class="demo-badge badge-admin">行政部</span>
+        </div>
+        <div class="demo-item" onclick="fillLogin('fin01','1234')">
+          <span class="demo-role">💼 財務</span>
+          <span class="demo-cred">fin01 / 1234</span>
+          <span class="demo-badge badge-fin">財務部</span>
+        </div>
+        <div class="demo-item" onclick="fillLogin('ceo','1234')">
+          <span class="demo-role">👑 CEO</span>
+          <span class="demo-cred">ceo / 1234</span>
+          <span class="demo-badge badge-ceo">總管理</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APP SCREEN ========== -->
+<div id="appScreen" style="display:none;">
+  <div class="app">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sl-icon">SF</div>
+        <div class="sl-text">三花生活館<br><span>員購管理系統</span></div>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="sideAvatar">王</div>
+        <div class="user-info">
+          <div class="user-name" id="sideName">王曉明</div>
+          <div class="user-role" id="sideRole">店長 — 05民生</div>
+        </div>
+        <div class="logout-btn" onclick="doLogout()" title="登出">
+          <i class="ti ti-logout"></i>
+        </div>
+      </div>
+      <div id="navSection"></div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="back-btn" id="backBtn" style="display:none;" onclick="goBack()">
+            <i class="ti ti-arrow-left"></i>
+          </div>
+          <div>
+            <div class="topbar-title" id="topbarTitle">員購申請單</div>
+            <div class="topbar-sub" id="topbarSub"></div>
+          </div>
+        </div>
+        <div class="topbar-actions" id="topbarActions"></div>
+      </div>
+      <div class="content" id="mainContent"></div>
+      <div class="action-bar" id="actionBar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT AREA (hidden, used for window.print) -->
+<div id="printContent" style="display:none;"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const USERS = {
+  store01: { pass:'1234', name:'王曉明', role:'store', roleLabel:'店長', store:'05民生', empId:'S0052', avatar:'王' },
+  sup01:   { pass:'1234', name:'張督導', role:'supervisor', roleLabel:'北區督導', store:'北區', avatar:'張' },
+  admin01: { pass:'1234', name:'李行政', role:'admin', roleLabel:'行政部門', store:'總公司', avatar:'李' },
+  fin01:   { pass:'1234', name:'陳財務', role:'finance', roleLabel:'財務部門', store:'總公司', avatar:'陳' },
+  ceo:     { pass:'1234', name:'施總',   role:'ceo', roleLabel:'CEO', store:'總管理', avatar:'施' },
+};
+
+const ORDERS = [
+  {
+    id:'EP250526-001', store:'05民生', emp:'王曉明', empId:'S0052',
+    date:'2025/05/26', status:'pending_sup',
+    items:[
+      {no:1, code:'A1234', name:'男平口褲 M', price:200, memberPrice:150, qty:2, sub:300},
+      {no:2, code:'B5678', name:'機能衣 L',   price:350, memberPrice:245, qty:1, sub:245},
+    ],
+    total:545, invoice:'', note:'',
+    supSign:'', adminSign:'', finSign:'',
+  },
+  {
+    id:'EP250524-003', store:'07信義', emp:'林雅惠', empId:'S0087',
+    date:'2025/05/24', status:'pending_admin',
+    items:[
+      {no:1, code:'C2345', name:'衛生褲 L',   price:200, memberPrice:200, qty:2, sub:400},
+      {no:2, code:'D3456', name:'短袖彩T M', price:280, memberPrice:175, qty:1, sub:175},
+    ],
+    total:575, invoice:'', note:'',
+    supSign:'張督導 2025/05/25', adminSign:'', finSign:'',
+  },
+  {
+    id:'EP250522-007', store:'12中山', emp:'陳建志', empId:'S0201',
+    date:'2025/05/22', status:'ready',
+    items:[
+      {no:1, code:'E4567', name:'長袖內衣 M', price:200, memberPrice:200, qty:2, sub:400},
+      {no:2, code:'F5678', name:'機能衣 M',   price:350, memberPrice:245, qty:1, sub:245},
+    ],
+    total:645, invoice:'', note:'',
+    supSign:'張督導 2025/05/23', adminSign:'李行政 2025/05/24', finSign:'',
+  },
+  {
+    id:'EP250518-002', store:'05民生', emp:'李欣怡', empId:'S0098',
+    date:'2025/05/18', status:'approved',
+    items:[
+      {no:1, code:'A1234', name:'男平口褲 L', price:200, memberPrice:150, qty:4, sub:600},
+      {no:2, code:'G6789', name:'短袖彩T L',  price:280, memberPrice:175, qty:2, sub:350},
+    ],
+    total:950, invoice:'AB12345678', note:'',
+    supSign:'張督導 2025/05/19', adminSign:'李行政 2025/05/20', finSign:'陳財務 2025/05/21',
+  },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentUser = null;
+let currentScreen = 'new';
+let viewingOrder = null;
+
+// ============================================================
+// LOGIN
+// ============================================================
+function fillLogin(u, p) {
+  document.getElementById('loginUser').value = u;
+  document.getElementById('loginPass').value = p;
+}
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  const ud = USERS[u];
+  if (ud && ud.pass === p) {
+    currentUser = { ...ud, username: u };
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'block';
+    document.getElementById('sideAvatar').textContent = currentUser.avatar;
+    document.getElementById('sideName').textContent = currentUser.name;
+    document.getElementById('sideRole').textContent = currentUser.roleLabel + (currentUser.store ? ' — ' + currentUser.store : '');
+    const defaults = { store:'new', supervisor:'pending_sup', admin:'pending_admin', finance:'finance_review', ceo:'dashboard' };
+    currentScreen = defaults[currentUser.role] || 'new';
+    viewingOrder = null;
+    renderNav();
+    renderScreen();
+  } else {
+    const err = document.getElementById('loginErr');
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 3000);
+  }
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  currentUser = null; viewingOrder = null;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'block';
+}
+
+// ============================================================
+// NAV CONFIG
+// ============================================================
+const NAV_CONFIG = {
+  store: [
+    { sec:'申請管理', items:[
+      { id:'new',      icon:'ti-plus',           label:'新增員購申請' },
+      { id:'myorders', icon:'ti-clipboard-list', label:'我的申請', badge:2 },
+    ]},
+    { sec:'查詢', items:[
+      { id:'history',  icon:'ti-history',        label:'歷史紀錄' },
+    ]},
+  ],
+  supervisor: [
+    { sec:'待辦', items:[
+      { id:'pending_sup', icon:'ti-checks',       label:'待我簽核', badge:1 },
+    ]},
+    { sec:'紀錄', items:[
+      { id:'all_orders',  icon:'ti-layout-list',  label:'所有申請' },
+    ]},
+  ],
+  admin: [
+    { sec:'庫存審核', items:[
+      { id:'pending_admin', icon:'ti-package',      label:'待審核庫存', badge:1 },
+      { id:'admin_done',    icon:'ti-circle-check', label:'已放行' },
+    ]},
+    { sec:'通知', items:[
+      { id:'notify_log', icon:'ti-bell', label:'通知紀錄' },
+    ]},
+  ],
+  finance: [
+    { sec:'財務', items:[
+      { id:'finance_review', icon:'ti-receipt',    label:'待列印簽核', badge:2 },
+      { id:'finance_done',   icon:'ti-file-check', label:'完成歸檔' },
+    ]},
+  ],
+  ceo: [
+    { sec:'總覽', items:[
+      { id:'dashboard',  icon:'ti-dashboard',    label:'系統總覽' },
+      { id:'all_orders', icon:'ti-layout-list',  label:'所有申請' },
+    ]},
+    { sec:'統計', items:[
+      { id:'stats', icon:'ti-chart-bar', label:'月報統計' },
+    ]},
+  ],
+};
+
+function renderNav() {
+  const cfg = NAV_CONFIG[currentUser.role];
+  let html = '';
+  cfg.forEach(g => {
+    html += `<div class="nav-group">`;
+    html += `<div class="nav-group-label">${g.sec}</div>`;
+    g.items.forEach(it => {
+      const act = (it.id === currentScreen && !viewingOrder) ? ' active' : '';
+      const b = it.badge ? `<span class="badge-count">${it.badge}</span>` : '';
+      html += `<div class="nav-item${act}" onclick="goScreen('${it.id}')"><i class="ti ${it.icon}"></i>${it.label}${b}</div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('navSection').innerHTML = html;
+}
+
+// ============================================================
+// SCREEN ROUTING
+// ============================================================
+const SCREEN_TITLES = {
+  new:'新增員購申請單', myorders:'我的申請', history:'歷史紀錄',
+  pending_sup:'待簽核清單', all_orders:'所有申請',
+  pending_admin:'待庫存審核', admin_done:'已放行',
+  notify_log:'通知紀錄', finance_review:'待列印簽核',
+  finance_done:'完成歸檔', dashboard:'系統總覽', stats:'月報統計',
+};
+
+function goScreen(s) {
+  currentScreen = s; viewingOrder = null;
+  renderNav(); renderScreen();
+}
+
+function goBack() {
+  viewingOrder = null; renderNav(); renderScreen();
+}
+
+function viewOrder(id) {
+  viewingOrder = ORDERS.find(o => o.id === id) || null;
+  renderNav(); renderScreen();
+}
+
+function renderScreen() {
+  const title = viewingOrder ? ('申請單 ' + viewingOrder.id) : (SCREEN_TITLES[currentScreen] || '');
+  const sub   = viewingOrder ? (viewingOrder.store + '店 ─ ' + viewingOrder.emp) : '';
+  document.getElementById('topbarTitle').textContent = title;
+  document.getElementById('topbarSub').textContent = sub;
+  document.getElementById('backBtn').style.display = viewingOrder ? 'flex' : 'none';
+
+  const SCREENS = {
+    new: screenNew,
+    myorders: screenMyOrders,
+    pending_sup: screenPendingSup,
+    pending_admin: screenPendingAdmin,
+    admin_done: screenAdminDone,
+    all_orders: screenAllOrders,
+    finance_review: screenFinanceReview,
+    finance_done: screenFinanceDone,
+    dashboard: screenDashboard,
+    stats: screenStats,
+    history: screenHistory,
+    notify_log: screenNotifyLog,
+  };
+
+  if (viewingOrder) {
+    document.getElementById('mainContent').innerHTML = screenOrderDetail(viewingOrder);
+    document.getElementById('actionBar').innerHTML = renderDetailActions();
+    document.getElementById('topbarActions').innerHTML = renderDetailTopActions();
+  } else {
+    const fn = SCREENS[currentScreen];
+    document.getElementById('mainContent').innerHTML = fn ? fn() : `<div style="padding:24px;color:var(--sf-text-muted)">此功能建置中…</div>`;
+    document.getElementById('actionBar').innerHTML = renderActionBar();
+    document.getElementById('topbarActions').innerHTML = '';
+  }
+}
+
+// ============================================================
+// STATUS HELPERS
+// ============================================================
+function sCls(s) {
+  return { pending_sup:'s-pending-sup', pending_admin:'s-pending-admin', ready:'s-ready', approved:'s-approved', draft:'s-draft' }[s] || 's-draft';
+}
+function sLbl(s) {
+  return { pending_sup:'待督導簽核', pending_admin:'待行政審核', ready:'可取貨', approved:'已完成', draft:'草稿' }[s] || s;
+}
+
+function flowHtml(status) {
+  const steps = ['店長填單','督導簽核','行政審核','通知取貨','財務紙本'];
+  const idx = { pending_sup:1, pending_admin:2, ready:3, approved:4 };
+  const cur = idx[status] || 0;
+  return steps.map((s,i) => {
+    const cls = i < cur ? 'done' : i === cur ? 'cur' : 'todo';
+    return `<div class="fstep"><div class="fdot ${cls}">${i+1}</div><div class="fstep-lbl">${s}</div></div>${i<4?'<div class="farrow"><i class="ti ti-chevron-right"></i></div>':''}`;
+  }).join('');
+}
+
+function orderCardHtml(o, clickable=true) {
+  const hint = clickable ? `<div class="oc-click"><i class="ti ti-eye"></i> 點擊查看完整單據</div>` : '';
+  return `
+    <div class="order-card" ${clickable?'onclick="viewOrder(\''+o.id+'\')\"':''}>
+      <div class="oc-top">
+        <span class="oc-id">${o.id}</span>
+        <span class="oc-store">${o.store}店 — ${o.emp}</span>
+        <span class="sbadge ${sCls(o.status)}">${sLbl(o.status)}</span>
+      </div>
+      <div class="oc-items">${o.items.map(i=>i.name+'×'+i.qty).join('、')}</div>
+      <div class="oc-meta">
+        <span><i class="ti ti-calendar"></i> ${o.date}</span>
+        <span><i class="ti ti-coin"></i> NT$ ${o.total.toLocaleString()}</span>
+      </div>
+      ${hint}
+    </div>`;
+}
+
+function paymentBox() {
+  return `
+    <div class="payment-box">
+      <div class="pb-label"><i class="ti ti-building-bank"></i> 支付方式</div>
+      <div>匯款至公司國泰世華銀行</div>
+      <div class="pb-account">013 — 0700035031888</div>
+      <div class="pb-note">請於取貨後 3 個工作日內完成匯款，並保留匯款收據</div>
+    </div>`;
+}
+
+// ============================================================
+// SCREENS
+// ============================================================
+function screenNew() {
+  return `
+    <div class="alert alert-info"><i class="ti ti-info-circle"></i>提交後，系統將自動通知督導進行線上簽核，無需等待督導巡店到場。</div>
+    <div class="flow-bar">${flowHtml('draft')}</div>
+    <div class="form-grid">
+      <div class="ff"><label class="flabel">門市</label><input class="finput" value="${currentUser.store}" readonly></div>
+      <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" value="${currentUser.name}" readonly></div>
+      <div class="ff"><label class="flabel">員工編號</label><input class="finput" value="${currentUser.empId||''}" placeholder="請輸入員工編號"></div>
+      <div class="ff"><label class="flabel">申購日期</label><input class="finput" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+    </div>
+    <table class="items-table">
+      <thead><tr>
+        <th style="width:32px">項</th><th style="width:90px">貨號</th><th>品名</th>
+        <th style="width:58px">定價</th><th style="width:65px">員購價</th>
+        <th style="width:42px">數量</th><th style="width:65px">小計</th>
+      </tr></thead>
+      <tbody>
+        ${[1,2,3,4,5,6,7,8].map(n=>`
+        <tr>
+          <td style="color:var(--sf-text-light)">${n}</td>
+          <td><input placeholder="貨號"></td>
+          <td><input placeholder="品名"></td>
+          <td><input placeholder="0"></td>
+          <td><input placeholder="0"></td>
+          <td><input placeholder="0"></td>
+          <td class="amount"></td>
+        </tr>`).join('')}
+        <tr class="total-row"><td colspan="5" style="text-align:right">合計金額</td><td></td><td class="amount">NT$ 0</td></tr>
+      </tbody>
+    </table>
+    ${paymentBox()}
+    <div class="ff full" style="margin-bottom:14px;">
+      <label class="flabel">備註</label>
+      <input class="finput" placeholder="選填">
+    </div>
+    <div class="sig-row">
+      <div class="sig-box done"><div class="sig-box-lbl">申購者 簽名/日期</div><div class="sig-box-val">${currentUser.name}<br>${new Date().toLocaleDateString('zh-TW')}</div></div>
+      <div class="sig-box waiting"><div class="sig-box-lbl">店主管 確認/日期</div><div class="sig-box-val">待線上簽核</div></div>
+      <div class="sig-box"><div class="sig-box-lbl">督導 核准/日期</div><div class="sig-box-val">—</div></div>
+      <div class="sig-box"><div class="sig-box-lbl">行政 確認/日期</div><div class="sig-box-val">—</div></div>
+      <div class="sig-box"><div class="sig-box-lbl">財務 核准/日期</div><div class="sig-box-val" style="font-size:10px;color:var(--sf-text-muted)">紙本簽核</div></div>
+    </div>
+  `;
+}
+
+function screenMyOrders() {
+  const list = ORDERS.filter(o => o.store === currentUser.store);
+  return `<div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>`;
+}
+
+function screenPendingSup() {
+  const list = ORDERS.filter(o => o.status === 'pending_sup');
+  return `
+    <div class="alert alert-warn"><i class="ti ti-clock"></i>以下申請等待您線上簽核。請點擊單據查看完整內容後再進行簽核。</div>
+    <div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>
+  `;
+}
+
+function screenPendingAdmin() {
+  const list = ORDERS.filter(o => o.status === 'pending_admin');
+  return `
+    <div class="alert alert-info"><i class="ti ti-package"></i>以下申請已通過督導簽核，請確認倉庫庫存後放行。放行後系統將自動通知店長可取貨。</div>
+    <div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>
+  `;
+}
+
+function screenAdminDone() {
+  const list = ORDERS.filter(o => o.status === 'ready' || o.status === 'approved');
+  return `<div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>`;
+}
+
+function screenAllOrders() {
+  return `<div class="order-list">${ORDERS.map(o=>orderCardHtml(o)).join('')}</div>`;
+}
+
+function screenFinanceReview() {
+  const list = ORDERS.filter(o => o.status === 'ready' || o.status === 'approved');
+  return `
+    <div class="alert alert-info"><i class="ti ti-printer"></i>以下申請已完成線上審核流程，請點擊單據後列印，進行紙本簽核歸檔。</div>
+    <div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>
+  `;
+}
+
+function screenFinanceDone() {
+  const list = ORDERS.filter(o => o.status === 'approved' && o.finSign);
+  if (!list.length) return `<div style="padding:24px;color:var(--sf-text-muted)">目前沒有已完成歸檔的申請單。</div>`;
+  return `<div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>`;
+}
+
+function screenDashboard() {
+  const total = ORDERS.reduce((s,o)=>s+o.total,0);
+  return `
+    <div class="stat-grid">
+      <div class="stat-card hl"><div class="stat-num">3</div><div class="stat-lbl">流程中申請</div></div>
+      <div class="stat-card"><div class="stat-num">2</div><div class="stat-lbl">本週完成</div></div>
+      <div class="stat-card"><div class="stat-num">NT$ ${total.toLocaleString()}</div><div class="stat-lbl">本月員購金額</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--sf-success)">1.5 天</div><div class="stat-lbl">平均處理時間</div></div>
+    </div>
+    <div class="alert alert-success" style="margin-bottom:14px;">
+      <i class="ti ti-trending-down"></i>
+      <div><strong>效率提升：</strong>原流程約 21 天 → 線上化後平均 1.5 天，縮短 <strong>93%</strong></div>
+    </div>
+    <div class="section-title">所有申請進度</div>
+    <div class="order-list">${ORDERS.map(o=>orderCardHtml(o)).join('')}</div>
+  `;
+}
+
+function screenStats() {
+  return `<div style="padding:24px;color:var(--sf-text-muted)">月報統計功能建置中…</div>`;
+}
+
+function screenHistory() {
+  return `<div class="order-list">${ORDERS.filter(o=>o.store===currentUser.store).map(o=>orderCardHtml(o)).join('')}</div>`;
+}
+
+function screenNotifyLog() {
+  return `
+    <div class="detail-section">
+      <div class="ds-title"><i class="ti ti-bell"></i>通知紀錄</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:var(--sf-gray-bg);border-radius:8px;padding:10px 13px;">
+          <div style="font-size:12px;font-weight:600;color:var(--sf-navy)">EP250522-007 — 12中山店 陳建志</div>
+          <div style="font-size:12px;color:var(--sf-text-muted);margin-top:3px;">LINE 通知已發送：「您的員購申請已審核通過，請攜帶此單至門市倉庫取貨。」</div>
+          <div style="font-size:11px;color:var(--sf-text-light);margin-top:4px;">2025/05/24 14:32</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// ORDER DETAIL SCREEN
+// ============================================================
+function screenOrderDetail(o) {
+  const itemRows = o.items.map(it => `
+    <tr>
+      <td>${it.no}</td>
+      <td>${it.code}</td>
+      <td>${it.name}</td>
+      <td>NT$ ${it.price.toLocaleString()}</td>
+      <td>NT$ ${it.memberPrice.toLocaleString()}</td>
+      <td>${it.qty}</td>
+      <td class="amount">NT$ ${it.sub.toLocaleString()}</td>
+    </tr>`).join('');
+
+  const supCls   = o.status==='pending_sup' ? 'waiting' : o.supSign ? 'done' : '';
+  const admCls   = o.status==='pending_admin' ? 'waiting' : o.adminSign ? 'done' : '';
+  const readyCls = (o.status==='ready'||o.status==='approved') ? 'done' : '';
+  const finCls   = o.finSign ? 'done' : (o.status==='ready'?'waiting':'');
+
+  return `
+    <div class="flow-bar">${flowHtml(o.status)}</div>
+
+    <div class="detail-section">
+      <div class="ds-title"><i class="ti ti-file-text"></i>申請基本資料</div>
+      <div class="kv-grid">
+        <div><div class="kv-key">申請單號</div><div class="kv-val">${o.id}</div></div>
+        <div><div class="kv-key">申購日期</div><div class="kv-val">${o.date}</div></div>
+        <div><div class="kv-key">門市</div><div class="kv-val">${o.store}店</div></div>
+        <div><div class="kv-key">申購者</div><div class="kv-val">${o.emp}（${o.empId}）</div></div>
+        <div><div class="kv-key">目前狀態</div><div class="kv-val"><span class="sbadge ${sCls(o.status)}">${sLbl(o.status)}</span></div></div>
+        <div><div class="kv-key">發票號碼</div><div class="kv-val">${o.invoice || '— 取貨後填寫'}</div></div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="ds-title"><i class="ti ti-list"></i>申購品項明細</div>
+      <table class="items-table">
+        <thead><tr>
+          <th style="width:32px">項</th><th style="width:90px">貨號</th><th>品名</th>
+          <th style="width:68px">定價</th><th style="width:72px">員購價</th>
+          <th style="width:42px">數量</th><th style="width:80px">小計</th>
+        </tr></thead>
+        <tbody>
+          ${itemRows}
+          <tr class="total-row">
+            <td colspan="5" style="text-align:right">合計金額</td>
+            <td></td>
+            <td class="amount">NT$ ${o.total.toLocaleString()}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="detail-section">
+      <div class="ds-title"><i class="ti ti-building-bank"></i>支付方式</div>
+      ${paymentBox()}
+    </div>
+
+    <div class="detail-section">
+      <div class="ds-title"><i class="ti ti-writing"></i>審核簽章記錄</div>
+      <div class="sig-row">
+        <div class="sig-box done">
+          <div class="sig-box-lbl">申購者 簽名/日期</div>
+          <div class="sig-box-val">${o.emp}<br>${o.date}</div>
+        </div>
+        <div class="sig-box ${supCls}">
+          <div class="sig-box-lbl">督導 簽核/日期</div>
+          <div class="sig-box-val">${o.supSign || (o.status==='pending_sup' ? '待簽核' : '—')}</div>
+        </div>
+        <div class="sig-box ${admCls}">
+          <div class="sig-box-lbl">行政 確認/日期</div>
+          <div class="sig-box-val">${o.adminSign || (o.status==='pending_admin' ? '待確認' : '—')}</div>
+        </div>
+        <div class="sig-box ${readyCls}">
+          <div class="sig-box-lbl">取貨通知</div>
+          <div class="sig-box-val">${(o.status==='ready'||o.status==='approved') ? '已通知' : '—'}</div>
+        </div>
+        <div class="sig-box ${finCls}">
+          <div class="sig-box-lbl">財務 紙本簽核</div>
+          <div class="sig-box-val" style="font-size:10px">${o.finSign || '待紙本簽核'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// ACTION BARS
+// ============================================================
+function renderActionBar() {
+  if (currentScreen === 'new') {
+    return `
+      <button class="btn" style="margin-right:auto"><i class="ti ti-device-floppy"></i> 儲存草稿</button>
+      <button class="btn btn-primary"><i class="ti ti-send"></i> 提交申請</button>
+    `;
+  }
+  return '';
+}
+
+function renderDetailTopActions() {
+  const o = viewingOrder;
+  if (!o) return '';
+  if (o.status === 'ready' || o.status === 'approved') {
+    return `<button class="btn btn-print" onclick="doPrint('${o.id}')"><i class="ti ti-printer"></i> 列印申請單</button>`;
+  }
+  return '';
+}
+
+function renderDetailActions() {
+  const o = viewingOrder;
+  if (!o) return '';
+  const role = currentUser.role;
+
+  if (role === 'supervisor' && o.status === 'pending_sup') {
+    return `
+      <span style="font-size:12px;color:var(--sf-text-muted);margin-right:auto">確認內容無誤後簽核</span>
+      <button class="btn btn-danger-outline" onclick="doReject('${o.id}')"><i class="ti ti-arrow-back-up"></i> 退回</button>
+      <button class="btn btn-success" onclick="doSupApprove('${o.id}')"><i class="ti ti-check"></i> 確認簽核</button>
+    `;
+  }
+  if (role === 'admin' && o.status === 'pending_admin') {
+    return `
+      <span style="font-size:12px;color:var(--sf-text-muted);margin-right:auto">確認庫存無誤後放行</span>
+      <button class="btn btn-danger-outline" onclick="doReject('${o.id}')"><i class="ti ti-arrow-back-up"></i> 退回</button>
+      <button class="btn btn-print" onclick="doPrint('${o.id}')"><i class="ti ti-printer"></i> 列印申請單</button>
+      <button class="btn btn-success" onclick="doAdminApprove('${o.id}')"><i class="ti ti-check"></i> 確認放行 + 通知取貨</button>
+    `;
+  }
+  if ((role === 'admin' || role === 'finance') && (o.status === 'ready' || o.status === 'approved')) {
+    return `
+      <span style="font-size:12px;color:var(--sf-text-muted);margin-right:auto">列印後進行紙本簽核歸檔</span>
+      <button class="btn btn-print" onclick="doPrint('${o.id}')"><i class="ti ti-printer"></i> 列印申請單</button>
+      ${role==='finance' && o.status==='ready' ? `<button class="btn btn-success" onclick="doFinApprove('${o.id}')"><i class="ti ti-check"></i> 標記紙本已完成</button>` : ''}
+    `;
+  }
+  return `<span style="font-size:12px;color:var(--sf-text-muted)">此單據為唯讀檢視</span>`;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function doReject(id) {
+  const o = ORDERS.find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('actionBar').innerHTML = `
+    <div class="notify-bar" style="flex:1;background:var(--sf-danger-bg);border-color:#FCA5A5;color:var(--sf-danger);">
+      <i class="ti ti-arrow-back-up"></i>
+      <div><strong>已退回</strong>，申請單 ${id} 已退回給店長，請店長確認後重新提交。</div>
+    </div>`;
+}
+
+function doSupApprove(id) {
+  const o = ORDERS.find(x => x.id === id);
+  if (o) {
+    o.status = 'pending_admin';
+    o.supSign = currentUser.name + ' ' + new Date().toLocaleDateString('zh-TW');
+  }
+  document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
+  document.getElementById('actionBar').innerHTML = `
+    <div class="notify-bar" style="flex:1">
+      <i class="ti ti-circle-check"></i>
+      <div><strong>簽核完成！</strong>申請單 ${id} 已轉交行政部門進行庫存審核，系統已自動發送通知。</div>
+    </div>`;
+  document.getElementById('topbarActions').innerHTML = '';
+}
+
+function doAdminApprove(id) {
+  const o = ORDERS.find(x => x.id === id);
+  if (o) {
+    o.status = 'ready';
+    o.adminSign = currentUser.name + ' ' + new Date().toLocaleDateString('zh-TW');
+  }
+  document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
+  document.getElementById('actionBar').innerHTML = `
+    <div class="notify-bar" style="flex:1">
+      <i class="ti ti-bell-ringing"></i>
+      <div><strong>放行完成，已自動通知！</strong> LINE 通知已發送至 ${o.store}店 ${o.emp}：「您的員購申請 ${id} 審核通過，請攜帶此單至門市倉庫取貨。」</div>
+    </div>
+    <button class="btn btn-print" onclick="doPrint('${id}')"><i class="ti ti-printer"></i> 列印申請單</button>`;
+  document.getElementById('topbarActions').innerHTML = `<button class="btn btn-print" onclick="doPrint('${id}')"><i class="ti ti-printer"></i> 列印</button>`;
+}
+
+function doFinApprove(id) {
+  const o = ORDERS.find(x => x.id === id);
+  if (o) {
+    o.status = 'approved';
+    o.finSign = currentUser.name + ' ' + new Date().toLocaleDateString('zh-TW');
+  }
+  document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
+  document.getElementById('actionBar').innerHTML = `
+    <div class="notify-bar" style="flex:1">
+      <i class="ti ti-circle-check"></i>
+      <strong>完成歸檔</strong>，此申請單 ${id} 全部流程已完成。
+    </div>`;
+}
+
+// ============================================================
+// PRINT
+// ============================================================
+function doPrint(id) {
+  const o = ORDERS.find(x => x.id === id);
+  if (!o) return;
+
+  const itemRows = o.items.map(it => `
+    <tr>
+      <td>${it.no}</td><td>${it.code}</td><td>${it.name}</td>
+      <td>NT$${it.price}</td><td>NT$${it.memberPrice}</td>
+      <td>${it.qty}</td><td>NT$${it.sub.toLocaleString()}</td>
+    </tr>`).join('');
+
+  const win = window.open('', '_blank', 'width=860,height=960');
+  win.document.write(`<!DOCTYPE html>
+<html lang="zh-TW"><head>
+<meta charset="UTF-8">
+<title>員購申請單 ${o.id}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Microsoft JhengHei',Arial,sans-serif;padding:24px 28px;color:#000;font-size:11.5px;max-width:860px;margin:0 auto;}
+  .hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #00337A;padding-bottom:12px;margin-bottom:14px;}
+  .logo-wrap{display:flex;align-items:center;gap:10px;}
+  .lb{width:42px;height:42px;background:#00337A;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;}
+  .ln{font-size:14px;font-weight:700;color:#00337A;line-height:1.3;}
+  .hdr-center{font-size:20px;font-weight:700;color:#00337A;}
+  .hdr-right{font-size:11px;color:#666;text-align:right;line-height:1.6;}
+  .info-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;}
+  .info-field{border:1px solid #bbb;border-radius:6px;padding:7px 9px;}
+  .info-key{font-size:9.5px;color:#888;margin-bottom:2px;}
+  .info-val{font-size:13px;font-weight:700;}
+  table{width:100%;border-collapse:collapse;margin-bottom:13px;}
+  th{background:#00337A;color:#fff;padding:6px 8px;font-size:11px;text-align:left;}
+  td{padding:5px 8px;border-bottom:1px solid #ddd;font-size:11px;}
+  tr.tot td{background:#E8F0FB;font-weight:700;font-size:12px;}
+  .pay{background:#E8F0FB;border:1px solid #B3CCF0;border-radius:7px;padding:10px 14px;margin-bottom:14px;}
+  .pay-lbl{font-size:10px;color:#5A6E8A;margin-bottom:4px;font-weight:600;}
+  .pay-acct{font-size:15px;font-weight:700;letter-spacing:1.5px;color:#00337A;}
+  .pay-note{font-size:10.5px;color:#777;margin-top:3px;}
+  .sig-row{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:13px;}
+  .sig-box{border:1px solid #bbb;border-radius:6px;padding:7px;text-align:center;height:64px;display:flex;flex-direction:column;justify-content:space-between;}
+  .sig-lbl{font-size:9.5px;color:#777;}
+  .sig-val{border-top:1px solid #ddd;padding-top:4px;font-size:10px;color:#444;}
+  .notes{font-size:10px;color:#555;border-top:1px solid #ddd;padding-top:9px;line-height:1.7;}
+  .print-btn{background:#00337A;color:#fff;border:none;border-radius:7px;padding:9px 22px;font-size:13px;cursor:pointer;margin-bottom:16px;font-family:inherit;}
+  .print-btn:hover{background:#002060;}
+  @media print{.print-btn{display:none;} body{padding:12px 16px;}}
+</style>
+</head><body>
+<button class="print-btn" onclick="window.print()">🖨 列印 / 儲存為 PDF</button>
+<div class="hdr">
+  <div class="logo-wrap">
+    <div class="lb">SF</div>
+    <div class="ln">三花生活館<br><span style="font-size:10.5px;font-weight:400;color:#5A6E8A;">員購申請明細表</span></div>
+  </div>
+  <div class="hdr-center">員購申請單</div>
+  <div class="hdr-right">單號：${o.id}<br>日期：${o.date}<br>2025/05/26 版</div>
+</div>
+<div class="info-row">
+  <div class="info-field"><div class="info-key">門市</div><div class="info-val">${o.store}店</div></div>
+  <div class="info-field"><div class="info-key">申購者姓名</div><div class="info-val">${o.emp}</div></div>
+  <div class="info-field"><div class="info-key">員工編號</div><div class="info-val">${o.empId}</div></div>
+</div>
+<table>
+  <thead><tr><th style="width:28px">項</th><th style="width:80px">貨號</th><th>品名</th><th style="width:65px">定價</th><th style="width:72px">員購價</th><th style="width:40px">數量</th><th style="width:75px">小計</th></tr></thead>
+  <tbody>
+    ${itemRows}
+    <tr class="tot"><td colspan="5" style="text-align:right">合計金額</td><td></td><td>NT$ ${o.total.toLocaleString()}</td></tr>
+  </tbody>
+</table>
+<div class="pay">
+  <div class="pay-lbl">💳 支付方式</div>
+  <div>匯款至公司國泰世華銀行</div>
+  <div class="pay-acct">013 — 0700035031888</div>
+  <div class="pay-note">請於取貨後 3 個工作日內完成匯款，並保留匯款收據</div>
+</div>
+<div class="sig-row">
+  <div class="sig-box"><div class="sig-lbl">申購者 簽名/日期</div><div class="sig-val">${o.emp}<br>${o.date}</div></div>
+  <div class="sig-box"><div class="sig-lbl">督導 核准/日期</div><div class="sig-val">${o.supSign||'&nbsp;'}</div></div>
+  <div class="sig-box"><div class="sig-lbl">行政 確認/日期</div><div class="sig-val">${o.adminSign||'&nbsp;'}</div></div>
+  <div class="sig-box"><div class="sig-lbl">財務 核准/日期</div><div class="sig-val">&nbsp;</div></div>
+  <div class="sig-box"><div class="sig-lbl">發票號碼</div><div class="sig-val">${o.invoice||'&nbsp;'}</div></div>
+</div>
+<div class="notes">
+  1.【員購價格】平口褲 6件$1,000→150元、5件$1,000→175元；短/無袖內衣150元；短袖彩T200元；衛生褲200元；長袖內衣200元；長袖彩T280元；機能衣350元；290元毛擺120元；機能商品七折；[8雙500]50元、[8雙1,000]100元、[6雙1,000]150元；其他商品定價7折（特價品、髮飾不開放員購）<br>
+  2.【員購規則】單月員購價加總不得超過 NT$3,000，不可購買非當季商品<br>
+  3.【支付方式】匯款，銀行代碼 013，帳號 0700035031888<br>
+  4.【流程說明】本單須經督導線上簽核 → 行政確認庫存 → 通知取貨 → 財務紙本歸檔
+</div>
+</body></html>`);
+  win.document.close();
+}
+</script>
+</body>
+</html>
