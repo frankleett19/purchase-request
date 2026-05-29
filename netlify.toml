@@ -1,0 +1,10 @@
+# Netlify 設定：指定 Functions 目錄
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+# 讓 /api/sheets 對應到 function（前端呼叫更短）
+[[redirects]]
+  from = "/api/sheets"
+  to = "/.netlify/functions/sheets"
+  status = 200

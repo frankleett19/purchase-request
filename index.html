@@ -325,6 +325,37 @@ select.finput { cursor: pointer; }
   #printContent, #printContent * { visibility: visible; }
   #printContent { position: fixed; top: 0; left: 0; width: 100%; }
 }
+
+/* ========== TOAST 提示 ========== */
+#toastWrap { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+.toast { background: var(--sf-navy); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,.2); opacity: 0; transform: translateY(-10px); transition: all .25s; max-width: 90vw; display: flex; align-items: center; gap: 8px; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: var(--sf-success); }
+.toast.error { background: var(--sf-danger); }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 90; }
+#navToggle { display: none; }
+
+/* ========== RWD 手機版 ========== */
+@media (max-width: 768px) {
+  .app { height: auto; min-height: 100vh; overflow: visible; }
+  .sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transform: translateX(-100%); transition: transform .25s; box-shadow: 2px 0 16px rgba(0,0,0,.25); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.show { display: block; }
+  .main { overflow: visible; }
+  .content { padding: 14px 12px; overflow-y: visible; }
+  .topbar { padding: 10px 12px; }
+  #navToggle { display: flex !important; }
+  .stat-grid { grid-template-columns: repeat(2,1fr); }
+  .form-grid { grid-template-columns: 1fr; }
+  .kv-grid { grid-template-columns: 1fr; }
+  .sig-row { grid-template-columns: 1fr 1fr; }
+  .items-table { display: block; overflow-x: auto; white-space: nowrap; }
+  .oc-meta { flex-wrap: wrap; gap: 8px; }
+  .oc-top { gap: 6px; }
+  .topbar-title { font-size: 15px; }
+  .topbar-sub { font-size: 10.5px; }
+}
+
 </style>
 </head>
 <body>
@@ -363,7 +394,7 @@ select.finput { cursor: pointer; }
 <div id="appScreen" style="display:none;">
   <div class="app">
     <!-- SIDEBAR -->
-    <div class="sidebar">
+    <div class="sidebar" id="appSidebar">
       <div class="sidebar-logo">
         <div class="sl-icon">SF</div>
         <div class="sl-text">三花生活館<br><span>員購管理系統</span></div>
@@ -380,11 +411,15 @@ select.finput { cursor: pointer; }
       </div>
       <div id="navSection"></div>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
     <!-- MAIN -->
     <div class="main">
       <div class="topbar">
         <div class="topbar-left">
+          <div class="back-btn" id="navToggle" onclick="toggleSidebar()" title="選單">
+            <i class="ti ti-menu-2"></i>
+          </div>
           <div class="back-btn" id="backBtn" style="display:none;" onclick="goBack()">
             <i class="ti ti-arrow-left"></i>
           </div>
@@ -411,7 +446,9 @@ select.finput { cursor: pointer; }
 // ============================================================
 // GOOGLE SHEETS API
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzDVPI-87vxbwEGlyt7eWyEQbfzh_FIL7-yxJpIza0TDwYPU6RbsnIx-RU1G5gyzAqYA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx0INZrbtCitxj-ag0WoJFDVJOpW-DW2ZZrS6h9T8tGKFf8Mf_zcxaLA1Qvl39xIqW_7A/exec';
+// Netlify Function 中間層（解決寫入的 CORS 與 URL 長度限制）
+const API_URL = '/api/sheets';
 
 const DEFAULT_USERS = {
   store01: { pass:'1234', name:'王曉明', role:'store', roleLabel:'店長', store:'05民生', empId:'S0052', avatar:'王' },
@@ -452,12 +489,20 @@ function gasCallJsonp(params) {
   });
 }
 
+// 主要呼叫：透過 Netlify Function 以 POST 轉發給 GAS（無 CORS、body 無長度限制）。
+// 若 Function 不可用（例如本機直接開檔）自動退回 JSONP（僅讀取可用）。
 async function gasCall(params) {
   try {
-    return await gasCallJsonp(params);
-  } catch(e) {
-    console.error('GAS error', e);
-    return { ok: true };
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return await resp.json();
+  } catch (e) {
+    console.warn('Function 呼叫失敗，改用 JSONP 後援：', e);
+    try { return await gasCallJsonp(params); } catch (e2) { return { ok: false, error: String(e2) }; }
   }
 }
 
@@ -481,30 +526,52 @@ async function saveUsers() {
 }
 
 async function saveOrders() {
-  // 分批：每次只存單筆最新的，然後全部重存
-  const data = JSON.stringify(ORDERS);
-  if (data.length < 6000) {
-    await gasCall({ action: 'saveOrders', data: data });
-  } else {
-    // 資料太大，分批每5筆存一次
-    for (let i = 0; i < ORDERS.length; i += 5) {
-      const batch = ORDERS.slice(i, i + 5);
-      await gasCall({ action: 'saveOrdersBatch', start: i, data: JSON.stringify(batch), total: ORDERS.length });
-    }
-  }
+  // 透過 POST，body 無長度限制，不需再分批
+  return await gasCall({ action: 'saveOrders', data: JSON.stringify(ORDERS) });
 }
 
 async function saveRejectLog() {
-  const data = JSON.stringify(REJECT_LOG);
-  if (data.length < 6000) {
-    await gasCall({ action: 'saveRejectLog', data: data });
-  }
+  return await gasCall({ action: 'saveRejectLog', data: JSON.stringify(REJECT_LOG) });
 }
 
 
 function showLoading(show) {
   const el = document.getElementById('loadingOverlay');
   if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+// 輕量透鐘提示
+function toast(msg, type) {
+  let wrap = document.getElementById('toastWrap');
+  if (!wrap) { wrap = document.createElement('div'); wrap.id = 'toastWrap'; document.body.appendChild(wrap); }
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  const icon = type === 'success' ? 'ti-circle-check' : type === 'error' ? 'ti-alert-circle' : 'ti-info-circle';
+  t.innerHTML = '<i class="ti ' + icon + '"></i>' + msg;
+  wrap.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+// 包裝儲存：loading + 成功/失敗 toast
+async function syncSave(fn, okMsg) {
+  showLoading(true);
+  let res;
+  try { res = await fn(); } catch (e) { res = { ok: false }; }
+  showLoading(false);
+  if (res && res.ok === false) { toast('儲存失敗，請檢查網路後重試', 'error'); return false; }
+  if (okMsg) toast(okMsg, 'success');
+  return true;
+}
+
+// 手機側邊欄抽屜
+function toggleSidebar(force) {
+  const sb = document.getElementById('appSidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  if (!sb) return;
+  const open = (force === undefined) ? !sb.classList.contains('open') : force;
+  sb.classList.toggle('open', open);
+  if (ov) ov.classList.toggle('show', open);
 }
 
 
@@ -646,6 +713,7 @@ const SCREEN_TITLES = {
 
 function goScreen(s) {
   currentScreen = s; viewingOrder = null;
+  toggleSidebar(false);
   renderNav(); renderScreen();
 }
 
@@ -998,12 +1066,14 @@ async function saveUser() {
   if (!uid || !name || !store) { alert('帳號、姓名、店別為必填'); return; }
   USERS[uid] = { pass, name, role, roleLabel: {store:'店長',supervisor:'督導',admin:'行政',finance:'財務'}[role]||role, store, empId, avatar: name[0] };
   closeUserModal();
+  await syncSave(saveUsers, '帳號已儲存');
   goScreen('user_mgmt');
 }
 
 async function deleteUser(uid) {
   if (!confirm(`確定要刪除帳號「${uid}」？`)) return;
   delete USERS[uid];
+  await syncSave(saveUsers, '帳號已刪除');
   goScreen('user_mgmt');
 }
 
@@ -1243,7 +1313,9 @@ function calcRow(el) {
   if (gt) gt.textContent = 'NT$ ' + grand.toLocaleString();
 }
 
+let isSubmitting = false;
 async function doSubmitNew() {
+  if (isSubmitting) return;
   const empName = document.getElementById('empName')?.value?.trim();
   const empId = document.getElementById('empId')?.value?.trim();
   const managerName = document.getElementById('managerName')?.value?.trim();
@@ -1256,6 +1328,7 @@ async function doSubmitNew() {
 
   const items = [];
   const rows = document.querySelectorAll('#itemsTable tbody tr:not(.total-row)');
+  const errors = [];
   rows.forEach((row, i) => {
     const inputs = row.querySelectorAll('input');
     const code = inputs[0]?.value?.trim();
@@ -1263,10 +1336,15 @@ async function doSubmitNew() {
     const price = parseFloat(inputs[2]?.value) || 0;
     const memberPrice = parseFloat(inputs[3]?.value) || 0;
     const qty = parseFloat(inputs[4]?.value) || 0;
-    if (code || name) {
-      items.push({ no: i+1, code: code||'—', name: name||'—', price, memberPrice, qty, sub: memberPrice * qty });
-    }
+    if (!code && !name && !qty && !memberPrice) return; // 整列空白略過
+    if (!code || !name) { errors.push('第 ' + (i+1) + ' 列：貨號與品名皆須填寫'); return; }
+    if (!/^[A-Za-z0-9]{1,10}$/.test(code)) { errors.push('第 ' + (i+1) + ' 列：貨號需為 1-10 碼英數字'); return; }
+    if (qty <= 0) { errors.push('第 ' + (i+1) + ' 列：數量須大於 0'); return; }
+    if (memberPrice <= 0) { errors.push('第 ' + (i+1) + ' 列：員購價須大於 0'); return; }
+    items.push({ no: i+1, code, name, price, memberPrice, qty, sub: memberPrice * qty });
   });
+  if (errors.length) { toast(errors[0], 'error'); return; }
+  if (!items.length) { toast('請至少填寫一項有效商品', 'error'); return; }
 
   if (!confirm(`確定要提交申請單？\n\n店別：${currentUser.store}店\n申購者：${empName}（${empId}）\n店主管：${managerName}\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
 
@@ -1284,7 +1362,11 @@ async function doSubmitNew() {
     items: items,
     supSign: '', adminSign: '', finSign: '', invoice: ''
   };
+  isSubmitting = true;
   ORDERS.unshift(newOrder);
+  const ok = await syncSave(saveOrders, '申請單已送出，已通知督導簽核');
+  isSubmitting = false;
+  if (!ok) { ORDERS.shift(); return; }
   goScreen('myorders');
 }
 
@@ -1295,6 +1377,7 @@ async function doDeleteOrder(id) {
   if (!confirm(`確定要刪除申請單 ${id}？\n\n此動作無法復原。`)) return;
   const idx = ORDERS.indexOf(o);
   if (idx > -1) ORDERS.splice(idx, 1);
+  await syncSave(saveOrders, '申請單已刪除');
   goScreen('myorders');
 }
 
@@ -1316,6 +1399,7 @@ async function doReject(id) {
   o.supSign = '';
   o.adminSign = '';
   viewingOrder = null;
+  await syncSave(async () => { await saveOrders(); return await saveRejectLog(); }, '已退回申請單');
   const backScreen = currentUser.role === 'supervisor' ? 'pending_sup' : 'pending_admin';
   goScreen(backScreen);
   setTimeout(() => {
@@ -1332,6 +1416,7 @@ async function doSupApprove(id) {
   if (o) {
     o.status = 'pending_admin';
     o.supSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    await syncSave(saveOrders, '簽核完成，已轉交行政');
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
@@ -1347,6 +1432,7 @@ async function doAdminApprove(id) {
   if (o) {
     o.status = 'ready';
     o.adminSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    await syncSave(saveOrders, '已放行，已通知門市取貨');
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
@@ -1363,6 +1449,7 @@ async function doFinApprove(id) {
   if (o) {
     o.status = 'approved';
     o.finSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    await syncSave(saveOrders, '已完成歸檔');
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
