@@ -235,6 +235,7 @@ body {
 .s-pending-admin { background: #DBEAFE; color: #1E40AF; }
 .s-ready { background: #D1FAE5; color: #065F46; }
 .s-approved { background: #E0E7FF; color: #3730A3; }
+.s-danger { background: #FEE2E2; color: #9B1C1C; }
 
 /* ========== ALERTS ========== */
 .alert { border-radius: 9px; padding: 11px 13px; font-size: 12.5px; margin-bottom: 13px; display: flex; align-items: flex-start; gap: 9px; }
@@ -581,7 +582,12 @@ function renderNav() {
     html += `<div class="nav-group-label">${g.sec}</div>`;
     g.items.forEach(it => {
       const act = (it.id === currentScreen && !viewingOrder) ? ' active' : '';
-      const b = it.badge ? `<span class="badge-count">${it.badge}</span>` : '';
+      let count = 0;
+      if (it.id === 'pending_sup') count = ORDERS.filter(o => o.status === 'pending_sup').length;
+      else if (it.id === 'pending_admin') count = ORDERS.filter(o => o.status === 'pending_admin').length;
+      else if (it.id === 'finance_review') count = ORDERS.filter(o => o.status === 'ready').length;
+      else if (it.id === 'myorders') count = ORDERS.filter(o => o.store === currentUser.store && (o.status === 'pending_sup' || o.status === 'draft')).length;
+      const b = count > 0 ? `<span class="badge-count">${count}</span>` : '';
       html += `<div class="nav-item${act}" onclick="goScreen('${it.id}')"><i class="ti ${it.icon}"></i>${it.label}${b}</div>`;
     });
     html += `</div>`;
@@ -652,10 +658,10 @@ function renderScreen() {
 // STATUS HELPERS
 // ============================================================
 function sCls(s) {
-  return { pending_sup:'s-pending-sup', pending_admin:'s-pending-admin', ready:'s-ready', approved:'s-approved', draft:'s-draft' }[s] || 's-draft';
+  return { pending_sup:'s-pending-sup', pending_admin:'s-pending-admin', ready:'s-ready', approved:'s-approved', draft:'s-draft', rejected:'s-danger' }[s] || 's-draft';
 }
 function sLbl(s) {
-  return { pending_sup:'待督導簽核', pending_admin:'待行政審核', ready:'可取貨', approved:'已完成', draft:'草稿' }[s] || s;
+  return { pending_sup:'待督導簽核', pending_admin:'待行政審核', ready:'可取貨', approved:'已完成', draft:'草稿', rejected:'已退回' }[s] || s;
 }
 
 function flowHtml(status) {
@@ -764,7 +770,30 @@ function screenNew() {
 
 function screenMyOrders() {
   const list = ORDERS.filter(o => o.store === currentUser.store);
-  return `<div class="order-list">${list.map(o=>orderCardHtml(o)).join('')}</div>`;
+  if (!list.length) return `<div style="padding:24px;color:var(--sf-text-muted)">目前沒有申請單。</div>`;
+  return `<div class="order-list">${list.map(o => orderCardWithDelete(o)).join('')}</div>`;
+}
+
+function orderCardWithDelete(o) {
+  const canDelete = (o.status === 'pending_sup' || o.status === 'draft' || o.status === 'rejected');
+  return `
+    <div class="order-card">
+      <div onclick="viewOrder('${o.id}')" style="cursor:pointer">
+        <div class="oc-top">
+          <span class="oc-id">${o.id}</span>
+          <span class="oc-store">${o.store}店 — ${o.emp}</span>
+          <span class="sbadge ${sCls(o.status)}">${sLbl(o.status)}</span>
+          ${canDelete ? `<button onclick="event.stopPropagation();doDeleteOrder('${o.id}')" style="margin-left:8px;background:var(--sf-danger-bg);color:var(--sf-danger);border:1px solid #FCA5A5;border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;font-weight:600;"><i class="ti ti-trash"></i> 刪除</button>` : ''}
+        </div>
+        <div class="oc-items">${o.items.length ? o.items.map(i=>i.name+'×'+i.qty).join('、') : '（無品項明細）'}</div>
+        <div class="oc-meta">
+          <span><i class="ti ti-calendar"></i> ${o.date}</span>
+          <span><i class="ti ti-coin"></i> NT$ ${o.total.toLocaleString()}</span>
+          ${o.manager ? `<span><i class="ti ti-user"></i> 店主管：${o.manager}</span>` : ''}
+        </div>
+        <div class="oc-click"><i class="ti ti-eye"></i> 點擊查看完整單據</div>
+      </div>
+    </div>`;
 }
 
 function screenPendingSup() {
@@ -1011,11 +1040,29 @@ function doSubmitNew() {
   const empName = document.getElementById('empName')?.value?.trim();
   const empId = document.getElementById('empId')?.value?.trim();
   const managerName = document.getElementById('managerName')?.value?.trim();
+  const managerId = document.getElementById('managerId')?.value?.trim();
   if (!empName) { alert('請填寫申購者姓名'); return; }
   if (!empId) { alert('請填寫申購者員工編號'); return; }
   if (!managerName) { alert('請填寫店主管姓名'); return; }
   const total = parseInt(document.getElementById('grandTotal')?.textContent.replace(/[^0-9]/g,'')) || 0;
   if (total === 0) { alert('請至少填寫一項商品'); return; }
+
+  const items = [];
+  const rows = document.querySelectorAll('#itemsTable tbody tr:not(.total-row)');
+  rows.forEach((row, i) => {
+    const inputs = row.querySelectorAll('input');
+    const code = inputs[0]?.value?.trim();
+    const name = inputs[1]?.value?.trim();
+    const price = parseFloat(inputs[2]?.value) || 0;
+    const memberPrice = parseFloat(inputs[3]?.value) || 0;
+    const qty = parseFloat(inputs[4]?.value) || 0;
+    if (code || name) {
+      items.push({ no: i+1, code: code||'—', name: name||'—', price, memberPrice, qty, sub: memberPrice * qty });
+    }
+  });
+
+  if (!confirm(`確定要提交申請單？\n\n申購者：${empName}（${empId}）\n店主管：${managerName}\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
+
   const newId = 'EP' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(ORDERS.length+1).padStart(3,'0');
   const newOrder = {
     id: newId,
@@ -1023,30 +1070,43 @@ function doSubmitNew() {
     emp: empName,
     empId: empId,
     manager: managerName,
+    managerId: managerId || '—',
     date: new Date().toLocaleDateString('zh-TW'),
     status: 'pending_sup',
     total: total,
-    items: [],
+    items: items,
     supSign: '', adminSign: '', finSign: '', invoice: ''
   };
   ORDERS.unshift(newOrder);
-  document.getElementById('actionBar').innerHTML = `
-    <div class="notify-bar" style="flex:1">
-      <i class="ti ti-circle-check"></i>
-      <div><strong>提交成功！</strong>申請單 ${newId} 已送出，系統已自動通知督導進行線上簽核。</div>
-    </div>`;
   goScreen('myorders');
 }
 
 
+function doDeleteOrder(id) {
+  const o = ORDERS.find(x => x.id === id);
+  if (!o) return;
+  if (!confirm(`確定要刪除申請單 ${id}？\n\n此動作無法復原。`)) return;
+  const idx = ORDERS.indexOf(o);
+  if (idx > -1) ORDERS.splice(idx, 1);
+  goScreen('myorders');
+}
+
 function doReject(id) {
   const o = ORDERS.find(x => x.id === id);
   if (!o) return;
-  document.getElementById('actionBar').innerHTML = `
-    <div class="notify-bar" style="flex:1;background:var(--sf-danger-bg);border-color:#FCA5A5;color:var(--sf-danger);">
-      <i class="ti ti-arrow-back-up"></i>
-      <div><strong>已退回</strong>，申請單 ${id} 已退回給店長，請店長確認後重新提交。</div>
-    </div>`;
+  o.status = 'rejected';
+  o.supSign = '';
+  o.adminSign = '';
+  viewingOrder = null;
+  const backScreen = currentUser.role === 'supervisor' ? 'pending_sup' : 'pending_admin';
+  goScreen(backScreen);
+  setTimeout(() => {
+    document.getElementById('actionBar').innerHTML = `
+      <div class="notify-bar" style="flex:1;background:var(--sf-danger-bg);border-color:#FCA5A5;color:var(--sf-danger);">
+        <i class="ti ti-arrow-back-up"></i>
+        <div><strong>已退回</strong>，申請單 ${id} 已退回，請店長確認後重新提交。</div>
+      </div>`;
+  }, 100);
 }
 
 function doSupApprove(id) {
