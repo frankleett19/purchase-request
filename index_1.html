@@ -705,13 +705,15 @@ function screenNew() {
     <div class="flow-bar">${flowHtml('draft')}</div>
     <div class="form-grid">
       <div class="ff"><label class="flabel">門市</label><input class="finput" value="${currentUser.store}" readonly></div>
-      <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" value="${currentUser.name}" readonly></div>
-      <div class="ff"><label class="flabel">員工編號</label><input class="finput" value="${currentUser.empId||''}" placeholder="請輸入員工編號"></div>
       <div class="ff"><label class="flabel">申購日期</label><input class="finput" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+      <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" id="empName" value="${currentUser.name}" placeholder="請輸入申購者姓名"></div>
+      <div class="ff"><label class="flabel">申購者員工編號</label><input class="finput" id="empId" value="${currentUser.empId||''}" placeholder="請輸入員工編號"></div>
+      <div class="ff"><label class="flabel">店主管姓名</label><input class="finput" id="managerName" placeholder="請輸入店主管姓名"></div>
+      <div class="ff"><label class="flabel">店主管員工編號</label><input class="finput" id="managerId" placeholder="請輸入店主管員工編號"></div>
     </div>
     <table class="items-table">
       <thead><tr>
-        <th style="width:32px">項</th><th style="width:90px">貨號</th><th>品名</th>
+        <th style="width:32px">項</th><th style="width:360px">貨號</th><th>品名</th>
         <th style="width:58px">定價</th><th style="width:65px">員購價</th>
         <th style="width:42px">數量</th><th style="width:65px">小計</th>
       </tr></thead>
@@ -729,13 +731,29 @@ function screenNew() {
         <tr class="total-row"><td colspan="5" style="text-align:right">合計金額</td><td></td><td class="amount">NT$ 0</td></tr>
       </tbody>
     </table>
+    <div style="background:var(--sf-blue-light);border:1px solid var(--sf-border);border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--sf-text);">
+      <div style="font-weight:700;color:var(--sf-navy);margin-bottom:6px;">📋 員購價參考</div>
+      <div style="line-height:2;">
+        平口褲 6件$1,000→<strong>150元</strong>、5件$1,000→<strong>175元</strong> ／
+        短袖、無袖內衣→<strong>150元</strong> ／
+        短袖彩T→<strong>200元</strong> ／
+        衛生褲→<strong>200元</strong> ／
+        長袖內衣→<strong>200元</strong> ／
+        長袖彩T→<strong>280元</strong> ／
+        機能衣→<strong>350元</strong> ／
+        290元毛擺→<strong>120元</strong> ／
+        機能商品→<strong>定價7折</strong><br>
+        襪子：[8雙$500]→<strong>50元</strong>、[8雙$1,000]→<strong>100元</strong>、[6雙$1,000]→<strong>150元</strong><br>
+        其他商品→<strong>定價7折</strong>（特價品、髮飾不開放員購）
+      </div>
+    </div>
     ${paymentBox()}
     <div class="ff full" style="margin-bottom:14px;">
       <label class="flabel">備註</label>
       <input class="finput" placeholder="選填">
     </div>
     <div class="sig-row">
-      <div class="sig-box done"><div class="sig-box-lbl">申購者 簽名/日期</div><div class="sig-box-val">${currentUser.name}<br>${new Date().toLocaleDateString('zh-TW')}</div></div>
+      <div class="sig-box done"><div class="sig-box-lbl">申購者 簽名/日期</div><div class="sig-box-val">${currentUser.name}<br>${new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}</div></div>
       <div class="sig-box waiting"><div class="sig-box-lbl">店主管 確認/日期</div><div class="sig-box-val">待線上簽核</div></div>
       <div class="sig-box"><div class="sig-box-lbl">督導 核准/日期</div><div class="sig-box-val">—</div></div>
       <div class="sig-box"><div class="sig-box-lbl">行政 確認/日期</div><div class="sig-box-val">—</div></div>
@@ -985,7 +1003,7 @@ function doSupApprove(id) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = 'pending_admin';
-    o.supSign = currentUser.name + ' ' + new Date().toLocaleDateString('zh-TW');
+    o.supSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
@@ -1000,7 +1018,7 @@ function doAdminApprove(id) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = 'ready';
-    o.adminSign = currentUser.name + ' ' + new Date().toLocaleDateString('zh-TW');
+    o.adminSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
@@ -1016,7 +1034,7 @@ function doFinApprove(id) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = 'approved';
-    o.finSign = currentUser.name + ' ' + new Date().toLocaleDateString('zh-TW');
+    o.finSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
