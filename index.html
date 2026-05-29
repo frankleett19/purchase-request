@@ -330,6 +330,12 @@ select.finput { cursor: pointer; }
 <body>
 
 <!-- ========== LOGIN SCREEN ========== -->
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,30,80,0.7);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <div style="color:#fff;font-size:14px;font-weight:600;">載入資料中，請稍候...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
 <div id="loginScreen">
   <div class="login-screen">
     <div class="login-card">
@@ -430,7 +436,12 @@ select.finput { cursor: pointer; }
 // ============================================================
 // DATA
 // ============================================================
-const USERS = {
+// ============================================================
+// GOOGLE SHEETS API
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzDVPI-87vxbwEGlyt7eWyEQbfzh_FIL7-yxJpIza0TDwYPU6RbsnIx-RU1G5gyzAqYA/exec';
+
+const DEFAULT_USERS = {
   store01: { pass:'1234', name:'王曉明', role:'store', roleLabel:'店長', store:'05民生', empId:'S0052', avatar:'王' },
   sup01:   { pass:'1234', name:'張督導', role:'supervisor', roleLabel:'北區督導', store:'北區', avatar:'張' },
   admin01: { pass:'1234', name:'李行政', role:'admin', roleLabel:'行政部門', store:'總公司', avatar:'李' },
@@ -438,49 +449,56 @@ const USERS = {
   ceo:     { pass:'1234', name:'施總',   role:'ceo', roleLabel:'系統管理員', store:'總管理', avatar:'施' },
 };
 
-const REJECT_LOG = [];
-const ORDERS = [
-  {
-    id:'EP250526-001', store:'05民生', emp:'王曉明', empId:'S0052',
-    date:'2025/05/26', status:'pending_sup',
-    items:[
-      {no:1, code:'A1234', name:'男平口褲 M', price:200, memberPrice:150, qty:2, sub:300},
-      {no:2, code:'B5678', name:'機能衣 L',   price:350, memberPrice:245, qty:1, sub:245},
-    ],
-    total:545, invoice:'', note:'',
-    supSign:'', adminSign:'', finSign:'',
-  },
-  {
-    id:'EP250524-003', store:'07信義', emp:'林雅惠', empId:'S0087',
-    date:'2025/05/24', status:'pending_admin',
-    items:[
-      {no:1, code:'C2345', name:'衛生褲 L',   price:200, memberPrice:200, qty:2, sub:400},
-      {no:2, code:'D3456', name:'短袖彩T M', price:280, memberPrice:175, qty:1, sub:175},
-    ],
-    total:575, invoice:'', note:'',
-    supSign:'張督導 2025/05/25', adminSign:'', finSign:'',
-  },
-  {
-    id:'EP250522-007', store:'12中山', emp:'陳建志', empId:'S0201',
-    date:'2025/05/22', status:'ready',
-    items:[
-      {no:1, code:'E4567', name:'長袖內衣 M', price:200, memberPrice:200, qty:2, sub:400},
-      {no:2, code:'F5678', name:'機能衣 M',   price:350, memberPrice:245, qty:1, sub:245},
-    ],
-    total:645, invoice:'', note:'',
-    supSign:'張督導 2025/05/23', adminSign:'李行政 2025/05/24', finSign:'',
-  },
-  {
-    id:'EP250518-002', store:'05民生', emp:'李欣怡', empId:'S0098',
-    date:'2025/05/18', status:'approved',
-    items:[
-      {no:1, code:'A1234', name:'男平口褲 L', price:200, memberPrice:150, qty:4, sub:600},
-      {no:2, code:'G6789', name:'短袖彩T L',  price:280, memberPrice:175, qty:2, sub:350},
-    ],
-    total:950, invoice:'AB12345678', note:'',
-    supSign:'張督導 2025/05/19', adminSign:'李行政 2025/05/20', finSign:'陳財務 2025/05/21',
-  },
+const DEFAULT_ORDERS = [
+  { id:'EP250526-001', store:'05民生', emp:'王曉明', empId:'S0052', date:'2025/05/26', status:'pending_sup', items:[{no:1,code:'A1234',name:'男平口褲 M',price:200,memberPrice:150,qty:2,sub:300},{no:2,code:'B5678',name:'機能衣 L',price:350,memberPrice:245,qty:1,sub:245}], total:545, invoice:'', note:'', supSign:'', adminSign:'', finSign:'' },
+  { id:'EP250524-003', store:'07信義', emp:'林雅惠', empId:'S0087', date:'2025/05/24', status:'pending_admin', items:[{no:1,code:'C2345',name:'衛生褲 L',price:200,memberPrice:200,qty:2,sub:400},{no:2,code:'D3456',name:'短袖彩T M',price:280,memberPrice:175,qty:1,sub:175}], total:575, invoice:'', note:'', supSign:'張督導 2025/05/25', adminSign:'', finSign:'' },
+  { id:'EP250522-007', store:'12中山', emp:'陳建志', empId:'S0201', date:'2025/05/22', status:'ready', items:[{no:1,code:'E4567',name:'長袖內衣 M',price:200,memberPrice:200,qty:2,sub:400},{no:2,code:'F5678',name:'機能衣 M',price:350,memberPrice:245,qty:1,sub:245}], total:645, invoice:'', note:'', supSign:'張督導 2025/05/23', adminSign:'李行政 2025/05/24', finSign:'' },
+  { id:'EP250518-002', store:'05民生', emp:'李欣怡', empId:'S0098', date:'2025/05/18', status:'approved', items:[{no:1,code:'A1234',name:'男平口褲 L',price:200,memberPrice:150,qty:4,sub:600},{no:2,code:'G6789',name:'短袖彩T L',price:280,memberPrice:175,qty:2,sub:350}], total:950, invoice:'AB12345678', note:'', supSign:'張督導 2025/05/19', adminSign:'李行政 2025/05/20', finSign:'陳財務 2025/05/21' },
 ];
+
+let USERS = Object.assign({}, DEFAULT_USERS);
+let ORDERS = DEFAULT_ORDERS.slice();
+let REJECT_LOG = [];
+let dataLoaded = false;
+
+async function gasCall(params) {
+  try {
+    const url = GAS_URL + '?' + Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
+    const res = await fetch(url);
+    return await res.json();
+  } catch(e) {
+    console.error('GAS error', e);
+    return null;
+  }
+}
+
+async function loadFromSheets() {
+  showLoading(true);
+  const data = await gasCall({ action: 'getAll' });
+  if (data) {
+    if (data.users && Object.keys(data.users).length > 0) USERS = data.users;
+    if (data.orders && data.orders.length > 0) ORDERS = data.orders;
+    if (data.rejectLog) REJECT_LOG = data.rejectLog;
+  }
+  dataLoaded = true;
+  showLoading(false);
+}
+
+async function saveUsers() {
+  await gasCall({ action: 'saveUsers', data: JSON.stringify(USERS) });
+}
+async function saveOrders() {
+  await gasCall({ action: 'saveOrders', data: JSON.stringify(ORDERS) });
+}
+async function saveRejectLog() {
+  await gasCall({ action: 'saveRejectLog', data: JSON.stringify(REJECT_LOG) });
+}
+
+function showLoading(show) {
+  const el = document.getElementById('loadingOverlay');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
 
 // ============================================================
 // STATE
@@ -497,11 +515,18 @@ function fillLogin(u, p) {
   document.getElementById('loginPass').value = p;
 }
 
-function doLogin() {
+async function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value.trim();
+  // 先用預設帳號驗證，同時載入最新帳號資料
+  const localCheck = USERS[u];
+  if (!localCheck || localCheck.pass !== p) {
+    // 嘗試從 Sheets 載入最新帳號再驗證
+    await loadFromSheets();
+  }
   const ud = USERS[u];
   if (ud && ud.pass === p) {
+    if (!dataLoaded) await loadFromSheets();
     currentUser = { ...ud, username: u };
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appScreen').style.display = 'block';
@@ -935,7 +960,7 @@ function closeUserModal() {
   document.getElementById('userModal').style.display = 'none';
 }
 
-function saveUser() {
+async function saveUser() {
   const editUid = document.getElementById('editUid').value;
   const uid = editUid || document.getElementById('fUid').value.trim();
   const name = document.getElementById('fName').value.trim();
@@ -949,7 +974,7 @@ function saveUser() {
   goScreen('user_mgmt');
 }
 
-function deleteUser(uid) {
+async function deleteUser(uid) {
   if (!confirm(`確定要刪除帳號「${uid}」？`)) return;
   delete USERS[uid];
   goScreen('user_mgmt');
@@ -1191,7 +1216,7 @@ function calcRow(el) {
   if (gt) gt.textContent = 'NT$ ' + grand.toLocaleString();
 }
 
-function doSubmitNew() {
+async function doSubmitNew() {
   const empName = document.getElementById('empName')?.value?.trim();
   const empId = document.getElementById('empId')?.value?.trim();
   const managerName = document.getElementById('managerName')?.value?.trim();
@@ -1237,7 +1262,7 @@ function doSubmitNew() {
 }
 
 
-function doDeleteOrder(id) {
+async function doDeleteOrder(id) {
   const o = ORDERS.find(x => x.id === id);
   if (!o) return;
   if (!confirm(`確定要刪除申請單 ${id}？\n\n此動作無法復原。`)) return;
@@ -1246,7 +1271,7 @@ function doDeleteOrder(id) {
   goScreen('myorders');
 }
 
-function doReject(id) {
+async function doReject(id) {
   const o = ORDERS.find(x => x.id === id);
   if (!o) return;
   const reason = prompt(`請輸入退回原因（申請單 ${id}）：`) || '未填寫原因';
@@ -1275,7 +1300,7 @@ function doReject(id) {
   }, 100);
 }
 
-function doSupApprove(id) {
+async function doSupApprove(id) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = 'pending_admin';
@@ -1290,7 +1315,7 @@ function doSupApprove(id) {
   document.getElementById('topbarActions').innerHTML = '';
 }
 
-function doAdminApprove(id) {
+async function doAdminApprove(id) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = 'ready';
@@ -1306,7 +1331,7 @@ function doAdminApprove(id) {
   document.getElementById('topbarActions').innerHTML = `<button class="btn btn-print" onclick="doPrint('${id}')"><i class="ti ti-printer"></i> 列印</button>`;
 }
 
-function doFinApprove(id) {
+async function doFinApprove(id) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = 'approved';
