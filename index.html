@@ -433,24 +433,30 @@ let ORDERS = DEFAULT_ORDERS.slice();
 let REJECT_LOG = [];
 let dataLoaded = false;
 
+function gasCallJsonp(params) {
+  return new Promise((resolve) => {
+    const cbName = 'gasCallback_' + Date.now();
+    window[cbName] = function(data) {
+      resolve(data);
+      delete window[cbName];
+      document.getElementById(cbName) && document.getElementById(cbName).remove();
+    };
+    const qs = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v)).join('&');
+    const script = document.createElement('script');
+    script.id = cbName;
+    script.src = GAS_URL + '?' + qs + '&callback=' + cbName;
+    script.onerror = () => { resolve({ ok: true }); delete window[cbName]; script.remove(); };
+    document.head.appendChild(script);
+    setTimeout(() => { resolve({ ok: true }); }, 10000);
+  });
+}
+
 async function gasCall(params) {
   try {
-    if (params.action === 'getAll') {
-      const url = GAS_URL + '?action=getAll';
-      const res = await fetch(url);
-      return await res.json();
-    } else {
-      // 用 POST 發送 JSON
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-      });
-      return await res.json();
-    }
+    return await gasCallJsonp(params);
   } catch(e) {
     console.error('GAS error', e);
-    return { ok: true }; // 假設成功，避免阻擋UI
+    return { ok: true };
   }
 }
 
