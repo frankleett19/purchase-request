@@ -372,7 +372,7 @@ select.finput { cursor: pointer; }
           <span class="demo-badge badge-fin">財務部</span>
         </div>
         <div class="demo-item" onclick="fillLogin('ceo','1234')">
-          <span class="demo-role">👑 CEO</span>
+          <span class="demo-role">👑 系統管理員</span>
           <span class="demo-cred">ceo / 1234</span>
           <span class="demo-badge badge-ceo">總管理</span>
         </div>
@@ -435,7 +435,7 @@ const USERS = {
   sup01:   { pass:'1234', name:'張督導', role:'supervisor', roleLabel:'北區督導', store:'北區', avatar:'張' },
   admin01: { pass:'1234', name:'李行政', role:'admin', roleLabel:'行政部門', store:'總公司', avatar:'李' },
   fin01:   { pass:'1234', name:'陳財務', role:'finance', roleLabel:'財務部門', store:'總公司', avatar:'陳' },
-  ceo:     { pass:'1234', name:'施總',   role:'ceo', roleLabel:'CEO', store:'總管理', avatar:'施' },
+  ceo:     { pass:'1234', name:'施總',   role:'ceo', roleLabel:'系統管理員', store:'總管理', avatar:'施' },
 };
 
 const REJECT_LOG = [];
@@ -843,7 +843,7 @@ function screenFinanceDone() {
 }
 
 function screenUserMgmt() {
-  const roleLabels = { store:'店長', supervisor:'督導', admin:'行政', finance:'財務', ceo:'CEO' };
+  const roleLabels = { store:'店長', supervisor:'督導', admin:'行政', finance:'財務', ceo:'系統管理員' };
   const rows = Object.entries(USERS).map(([uid, u]) => `
     <tr>
       <td>${uid}</td>
@@ -890,6 +890,7 @@ function screenUserMgmt() {
             <option value="supervisor">督導</option>
             <option value="admin">行政</option>
             <option value="finance">財務</option>
+            <option value="ceo">系統管理員</option>
           </select></div>
         <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">店別/部門</label>
           <input id="fStore" class="finput" placeholder="例：05民生"></div>
