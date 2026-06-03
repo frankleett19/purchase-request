@@ -1,0 +1,52 @@
+{
+  "type": "bubble",
+  "size": "full",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#1B9E4B",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "🟢 您的員購申請已核准", "color": "#FFFFFF", "weight": "bold", "size": "lg", "wrap": true }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "md",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "恭喜！您的員購申請已通過審核，請依下方取貨方式辦理。", "size": "sm", "color": "#555555", "wrap": true },
+      { "type": "separator", "margin": "md" },
+      {
+        "type": "box", "layout": "vertical", "spacing": "sm", "margin": "md",
+        "contents": [
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "申請單號", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{orderId}}", "color": "#E8001D", "size": "sm", "weight": "bold", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "審核人", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{approverName}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "核准時間", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{approveTime}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "取貨方式", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{pickupMethod}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "sm",
+    "paddingAll": "12px",
+    "contents": [
+      { "type": "button", "style": "primary", "color": "#E8001D", "height": "sm",
+        "action": { "type": "uri", "label": "查看訂單", "uri": "{{detailUrl}}" } },
+      { "type": "button", "style": "primary", "color": "#E8001D", "height": "sm",
+        "action": { "type": "uri", "label": "取貨說明", "uri": "{{pickupUrl}}" } }
+    ]
+  }
+}

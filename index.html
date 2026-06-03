@@ -574,6 +574,31 @@ function toggleSidebar(force) {
   if (ov) ov.classList.toggle('show', open);
 }
 
+// ============================================================
+// LINE 推播（呼叫 /api/notify，失敗不影響主流程）
+// ============================================================
+async function notify(type, to, data) {
+  try {
+    const targets = Array.isArray(to) ? to.filter(Boolean) : (to ? [to] : []);
+    if (!targets.length) { console.warn('notify 略過：無 lineUserId', type); return; }
+    await fetch('/api/notify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, to: targets, data: data || {} }),
+    });
+  } catch (e) { console.warn('notify 失敗', type, e); }
+}
+function lineIdsByRole(role) {
+  return Object.values(USERS).filter(u => u.role === role && u.lineUserId).map(u => u.lineUserId);
+}
+function lineIdByName(name, store) {
+  const u = Object.values(USERS).find(x => x.name === name && (!store || x.store === store) && x.lineUserId)
+         || Object.values(USERS).find(x => x.name === name && x.lineUserId);
+  return u ? u.lineUserId : null;
+}
+function nowStr() {
+  return new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+}
+
 
 // ============================================================
 // STATE
@@ -1014,8 +1039,10 @@ function screenUserMgmt() {
           </select></div>
         <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">店別/部門</label>
           <input id="fStore" class="finput" placeholder="例：05民生"></div>
-        <div style="margin-bottom:16px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">員工編號</label>
+        <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">員工編號</label>
           <input id="fEmpId" class="finput" placeholder="例：S0052"></div>
+        <div style="margin-bottom:16px"><label style="font-size:12px;color:var(--sf-text-muted);font-weight:600;display:block;margin-bottom:4px">LINE User ID（推播用，選填）</label>
+          <input id="fLineId" class="finput" placeholder="例：U1234567890abcdef..."></div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" onclick="closeUserModal()">取消</button>
           <button class="btn btn-primary" onclick="saveUser()">儲存</button>
@@ -1034,6 +1061,7 @@ function showAddUser() {
   document.getElementById('fRole').value = 'store';
   document.getElementById('fStore').value = '';
   document.getElementById('fEmpId').value = '';
+  document.getElementById('fLineId').value = '';
   document.getElementById('userModal').style.display = 'flex';
 }
 
@@ -1048,6 +1076,7 @@ function editUser(uid) {
   document.getElementById('fRole').value = u.role;
   document.getElementById('fStore').value = u.store;
   document.getElementById('fEmpId').value = u.empId || '';
+  document.getElementById('fLineId').value = u.lineUserId || '';
   document.getElementById('userModal').style.display = 'flex';
 }
 
@@ -1063,8 +1092,9 @@ async function saveUser() {
   const role = document.getElementById('fRole').value;
   const store = document.getElementById('fStore').value.trim();
   const empId = document.getElementById('fEmpId').value.trim();
+  const lineUserId = document.getElementById('fLineId').value.trim();
   if (!uid || !name || !store) { alert('帳號、姓名、店別為必填'); return; }
-  USERS[uid] = { pass, name, role, roleLabel: {store:'店長',supervisor:'督導',admin:'行政',finance:'財務'}[role]||role, store, empId, avatar: name[0] };
+  USERS[uid] = { pass, name, role, roleLabel: {store:'店長',supervisor:'督導',admin:'行政',finance:'財務'}[role]||role, store, empId, lineUserId, avatar: name[0] };
   closeUserModal();
   await syncSave(saveUsers, '帳號已儲存');
   goScreen('user_mgmt');
@@ -1367,6 +1397,8 @@ async function doSubmitNew() {
   const ok = await syncSave(saveOrders, '申請單已送出，已通知督導簽核');
   isSubmitting = false;
   if (!ok) { ORDERS.shift(); return; }
+  notify('submitted', currentUser.lineUserId, { empName, store: currentUser.store, submitTime: newOrder.date, orderId: newId });
+  notify('pending_review', lineIdsByRole('supervisor'), { empName, submitTime: newOrder.date, pendingCount: ORDERS.filter(o => o.status === 'pending_sup').length });
   goScreen('myorders');
 }
 
@@ -1400,6 +1432,8 @@ async function doReject(id) {
   o.adminSign = '';
   viewingOrder = null;
   await syncSave(async () => { await saveOrders(); return await saveRejectLog(); }, '已退回申請單');
+  notify('rejected', lineIdByName(o.emp, o.store) || currentUser.lineUserId,
+    { orderId: id, rejectReason: reason, rejectTime: nowStr() });
   const backScreen = currentUser.role === 'supervisor' ? 'pending_sup' : 'pending_admin';
   goScreen(backScreen);
   setTimeout(() => {
@@ -1431,8 +1465,11 @@ async function doAdminApprove(id) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = 'ready';
-    o.adminSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    const _t = nowStr();
+    o.adminSign = currentUser.name + ' ' + _t;
     await syncSave(saveOrders, '已放行，已通知門市取貨');
+    notify('approved', lineIdByName(o.emp, o.store) || currentUser.lineUserId,
+      { orderId: o.id, approverName: currentUser.name, approveTime: _t, pickupMethod: '至門市倉庫憑單取貨' });
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `

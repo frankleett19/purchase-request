@@ -1,0 +1,55 @@
+{
+  "type": "bubble",
+  "size": "full",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#4A4A4A",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "📅 本月員購使用摘要", "color": "#FFFFFF", "weight": "bold", "size": "lg", "wrap": true },
+      { "type": "text", "text": "{{monthLabel}}", "color": "#CCCCCC", "size": "xs", "margin": "sm" }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "md",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "{{empName}} 您好，以下是本月的員購使用情形：", "size": "sm", "color": "#555555", "wrap": true },
+      { "type": "separator", "margin": "md" },
+      {
+        "type": "box", "layout": "vertical", "spacing": "sm", "margin": "md",
+        "contents": [
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "申請筆數", "color": "#8C8C8C", "size": "xs", "flex": 4 },
+            { "type": "text", "text": "{{totalCount}} 筆", "color": "#333333", "size": "sm", "flex": 6, "align": "end" } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "已核准", "color": "#8C8C8C", "size": "xs", "flex": 4 },
+            { "type": "text", "text": "{{approvedCount}} 筆", "color": "#1B9E4B", "size": "sm", "flex": 6, "align": "end" } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "待審核", "color": "#8C8C8C", "size": "xs", "flex": 4 },
+            { "type": "text", "text": "{{pendingCount}} 筆", "color": "#B45309", "size": "sm", "flex": 6, "align": "end" } ] },
+          { "type": "separator", "margin": "md" },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "margin": "md", "contents": [
+            { "type": "text", "text": "本月使用金額", "color": "#8C8C8C", "size": "xs", "flex": 4 },
+            { "type": "text", "text": "NT$ {{usedAmount}}", "color": "#E8001D", "size": "sm", "weight": "bold", "flex": 6, "align": "end" } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "剩餘額度", "color": "#8C8C8C", "size": "xs", "flex": 4 },
+            { "type": "text", "text": "NT$ {{remainingQuota}}", "color": "#333333", "size": "sm", "flex": 6, "align": "end" } ] }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "sm",
+    "paddingAll": "12px",
+    "contents": [
+      { "type": "button", "style": "primary", "color": "#E8001D", "height": "sm",
+        "action": { "type": "uri", "label": "查看完整紀錄", "uri": "{{historyUrl}}" } }
+    ]
+  }
+}

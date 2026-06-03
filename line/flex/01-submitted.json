@@ -1,0 +1,50 @@
+{
+  "type": "bubble",
+  "size": "full",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#2BB673",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "✅ 員購申請已送出", "color": "#FFFFFF", "weight": "bold", "size": "lg", "wrap": true }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "md",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "您的員購申請單已成功送出，系統已通知店主管進行線上簽核。", "size": "sm", "color": "#555555", "wrap": true },
+      { "type": "separator", "margin": "md" },
+      {
+        "type": "box", "layout": "vertical", "spacing": "sm", "margin": "md",
+        "contents": [
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "申請人", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{empName}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "分店", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{store}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "申請時間", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{submitTime}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "申請單號", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{orderId}}", "color": "#E8001D", "size": "sm", "weight": "bold", "flex": 7, "wrap": true } ] }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "sm",
+    "paddingAll": "12px",
+    "contents": [
+      { "type": "button", "style": "primary", "color": "#E8001D", "height": "sm",
+        "action": { "type": "uri", "label": "查看申請單詳情", "uri": "{{detailUrl}}" } }
+    ]
+  }
+}

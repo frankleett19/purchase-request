@@ -1,0 +1,47 @@
+{
+  "type": "bubble",
+  "size": "full",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#1A6FB5",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "📬 您有新的員購申請待審核", "color": "#FFFFFF", "weight": "bold", "size": "lg", "wrap": true }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "md",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "有員工送出新的員購申請，等待您線上簽核。", "size": "sm", "color": "#555555", "wrap": true },
+      { "type": "separator", "margin": "md" },
+      {
+        "type": "box", "layout": "vertical", "spacing": "sm", "margin": "md",
+        "contents": [
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "申請人", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{empName}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "送出時間", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{submitTime}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "待審筆數", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{pendingCount}} 筆", "color": "#1A6FB5", "size": "sm", "weight": "bold", "flex": 7, "wrap": true } ] }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "sm",
+    "paddingAll": "12px",
+    "contents": [
+      { "type": "button", "style": "primary", "color": "#E8001D", "height": "sm",
+        "action": { "type": "uri", "label": "前往審核後台", "uri": "{{reviewUrl}}" } }
+    ]
+  }
+}

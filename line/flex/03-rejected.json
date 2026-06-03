@@ -1,0 +1,48 @@
+{
+  "type": "bubble",
+  "size": "full",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#D32030",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "🔴 您的員購申請已退回", "color": "#FFFFFF", "weight": "bold", "size": "lg", "wrap": true }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "md",
+    "paddingAll": "16px",
+    "contents": [
+      { "type": "text", "text": "您的員購申請未通過，請參考退回原因修改後重新申請。", "size": "sm", "color": "#555555", "wrap": true },
+      { "type": "separator", "margin": "md" },
+      {
+        "type": "box", "layout": "vertical", "spacing": "sm", "margin": "md",
+        "contents": [
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "申請單號", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{orderId}}", "color": "#E8001D", "size": "sm", "weight": "bold", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "baseline", "spacing": "sm", "contents": [
+            { "type": "text", "text": "退回時間", "color": "#8C8C8C", "size": "xs", "flex": 3 },
+            { "type": "text", "text": "{{rejectTime}}", "color": "#333333", "size": "sm", "flex": 7, "wrap": true } ] },
+          { "type": "box", "layout": "vertical", "spacing": "xs", "margin": "sm",
+            "contents": [
+              { "type": "text", "text": "退回原因", "color": "#8C8C8C", "size": "xs" },
+              { "type": "text", "text": "{{rejectReason}}", "color": "#D32030", "size": "sm", "wrap": true } ] }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "spacing": "sm",
+    "paddingAll": "12px",
+    "contents": [
+      { "type": "button", "style": "primary", "color": "#E8001D", "height": "sm",
+        "action": { "type": "uri", "label": "重新申請", "uri": "{{reapplyUrl}}" } }
+    ]
+  }
+}

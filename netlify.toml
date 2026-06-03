@@ -8,3 +8,13 @@
   from = "/api/sheets"
   to = "/.netlify/functions/sheets"
   status = 200
+
+# /api/notify 對應到推播 function
+[[redirects]]
+  from = "/api/notify"
+  to = "/.netlify/functions/notify"
+  status = 200
+
+# 月底摘要排程：每天 UTC 01:00 觸發，function 內判斷是否為當月最後一天
+[functions."monthly-summary"]
+  schedule = "0 1 28-31 * *"
