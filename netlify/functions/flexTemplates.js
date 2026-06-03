@@ -55,13 +55,13 @@ function buildSubmitted(d) {
 // 2) 審核通過通知 → 申請員工
 function buildApproved(d) {
   return bubble('#1B9E4B', '🟢 您的員購申請已核准', null, [
-    intro('恭喜！您的員購申請已通過審核，請依下方取貨方式辦理。'),
+    intro('您的員購審核已通過，請留意貨物將於 10 天內送達您選取的門市' + (d.store ? '（' + d.store + '）' : '') + '。'),
     sep(),
     group([
       row('申請單號', d.orderId, BRAND, true),
-      row('審核人', d.approverName),
-      row('核准時間', d.approveTime),
-      row('取貨方式', d.pickupMethod || '至門市倉庫憑單取貨')
+      row('員購者', d.empName),
+      row('員購者申請時間', d.submitTime),
+      row('行政核准時間', d.approveTime)
     ])
   ], [
     btn('查看訂單', d.detailUrl || (SITE + '/#order/' + encodeURIComponent(d.orderId || ''))),

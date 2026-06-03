@@ -1522,14 +1522,12 @@ async function doAdminApprove(id) {
     const _t = nowStr();
     o.adminSign = currentUser.name + ' ' + _t;
     await syncSave(saveOrders, '已放行，已通知門市取貨');
-    notify('approved', lineIdByName(o.emp, o.store) || currentUser.lineUserId,
-      { orderId: o.id, approverName: currentUser.name, approveTime: _t, pickupMethod: '至門市倉庫憑單取貨' });
+    const approvedData = { orderId: o.id, empName: o.emp, store: o.store, submitTime: o.date, approveTime: _t };
+    notify('approved', lineIdByName(o.emp, o.store) || currentUser.lineUserId, approvedData);
     // 試辦：行政放行後，通知「門市」對應的 LINE 群組（先做 05民生一間）
     const gid = groupIdByStore(o.store);
     if (gid) {
-      notify('approved', gid,
-        { orderId: o.id, approverName: currentUser.name, approveTime: _t,
-          pickupMethod: o.emp + ' 的員購單已放行，請至門市倉庫憑單取貨' });
+      notify('approved', gid, approvedData);
     }
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
