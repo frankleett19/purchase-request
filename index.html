@@ -847,8 +847,6 @@ function screenNew() {
       <div class="ff"><label class="flabel">申購日期</label><input class="finput" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
       <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" id="empName" placeholder="請輸入申購者姓名"></div>
       <div class="ff"><label class="flabel">申購者員工編號</label><input class="finput" id="empId" placeholder="請輸入員工編號"></div>
-      <div class="ff"><label class="flabel">店主管姓名</label><input class="finput" id="managerName" placeholder="請輸入店主管姓名"></div>
-      <div class="ff"><label class="flabel">店主管員工編號</label><input class="finput" id="managerId" placeholder="請輸入店主管員工編號"></div>
     </div>
     <table class="items-table" id="itemsTable">
       <thead><tr>
@@ -893,8 +891,7 @@ function screenNew() {
     </div>
     <div class="sig-row">
       <div class="sig-box done"><div class="sig-box-lbl">申購者 簽名/日期</div><div class="sig-box-val">${currentUser.name}<br>${new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}</div></div>
-      <div class="sig-box waiting"><div class="sig-box-lbl">店主管 確認/日期</div><div class="sig-box-val">待線上簽核</div></div>
-      <div class="sig-box"><div class="sig-box-lbl">督導 核准/日期</div><div class="sig-box-val">—</div></div>
+      <div class="sig-box waiting"><div class="sig-box-lbl">督導 核准/日期</div><div class="sig-box-val">待線上簽核</div></div>
       <div class="sig-box"><div class="sig-box-lbl">行政 確認/日期</div><div class="sig-box-val">—</div></div>
       <div class="sig-box"><div class="sig-box-lbl">財務 核准/日期</div><div class="sig-box-val" style="font-size:10px;color:var(--sf-text-muted)">紙本簽核</div></div>
     </div>
@@ -1348,13 +1345,11 @@ async function doSubmitNew() {
   if (isSubmitting) return;
   const empName = document.getElementById('empName')?.value?.trim();
   const empId = document.getElementById('empId')?.value?.trim();
-  const managerName = document.getElementById('managerName')?.value?.trim();
-  const managerId = document.getElementById('managerId')?.value?.trim();
   if (!empName) { alert('請填寫申購者姓名'); return; }
   if (!empId) { alert('請填寫申購者員工編號'); return; }
-  if (!managerName) { alert('請填寫店主管姓名'); return; }
   const total = parseInt(document.getElementById('grandTotal')?.textContent.replace(/[^0-9]/g,'')) || 0;
   if (total === 0) { alert('請至少填寫一項商品'); return; }
+  if (total > 3000) { toast('單筆訂單總金額不得超過 NT$ 3,000（目前 NT$ ' + total.toLocaleString() + '）', 'error'); return; }
 
   const items = [];
   const rows = document.querySelectorAll('#itemsTable tbody tr:not(.total-row)');
@@ -1376,7 +1371,7 @@ async function doSubmitNew() {
   if (errors.length) { toast(errors[0], 'error'); return; }
   if (!items.length) { toast('請至少填寫一項有效商品', 'error'); return; }
 
-  if (!confirm(`確定要提交申請單？\n\n店別：${currentUser.store}店\n申購者：${empName}（${empId}）\n店主管：${managerName}\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
+  if (!confirm(`確定要提交申請單？\n\n店別：${currentUser.store}店\n申購者：${empName}（${empId}）\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
 
   const newId = 'EP' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(ORDERS.length+1).padStart(3,'0');
   const newOrder = {
@@ -1384,8 +1379,6 @@ async function doSubmitNew() {
     store: currentUser.store,
     emp: empName,
     empId: empId,
-    manager: managerName,
-    managerId: managerId || '—',
     date: new Date().toLocaleDateString('zh-TW'),
     status: 'pending_sup',
     total: total,
@@ -1451,6 +1444,7 @@ async function doSupApprove(id) {
     o.status = 'pending_admin';
     o.supSign = currentUser.name + ' ' + new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
     await syncSave(saveOrders, '簽核完成，已轉交行政');
+    notify('pending_review', lineIdsByRole('admin'), { empName: o.emp, submitTime: nowStr(), pendingCount: ORDERS.filter(x => x.status === 'pending_admin').length });
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
