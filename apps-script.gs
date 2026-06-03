@@ -81,7 +81,8 @@ function handle_(e) {
         ok: true,
         users: readCell_(1) || {},
         orders: readCell_(2) || [],
-        rejectLog: readCell_(3) || []
+        rejectLog: readCell_(3) || [],
+        stores: readCell_(4) || []
       }, callback);
 
     case 'saveUsers':
@@ -94,6 +95,10 @@ function handle_(e) {
 
     case 'saveRejectLog':
       writeCell_(3, payload() || []);
+      return out_({ ok: true }, callback);
+
+    case 'saveStores':
+      writeCell_(4, payload() || []);
       return out_({ ok: true }, callback);
 
     // 向下相容：分批存單（合併進現有 orders）

@@ -468,6 +468,8 @@ const DEFAULT_ORDERS = [
 let USERS = Object.assign({}, DEFAULT_USERS);
 let ORDERS = DEFAULT_ORDERS.slice();
 let REJECT_LOG = [];
+// 門市群組對照：每筆 { name:'05民生', groupId:'Cxxx' }。由「門市群組設定」頁維護，存後端。
+let STORES = [];
 let dataLoaded = false;
 
 function gasCallJsonp(params) {
@@ -513,6 +515,7 @@ async function loadFromSheets() {
     if (data.users && Object.keys(data.users).length > 0) USERS = data.users;
     if (data.orders && data.orders.length > 0) ORDERS = data.orders;
     if (data.rejectLog) REJECT_LOG = data.rejectLog;
+    if (Array.isArray(data.stores)) STORES = data.stores;
   }
   dataLoaded = true;
   showLoading(false);
@@ -532,6 +535,10 @@ async function saveOrders() {
 
 async function saveRejectLog() {
   return await gasCall({ action: 'saveRejectLog', data: JSON.stringify(REJECT_LOG) });
+}
+
+async function saveStores() {
+  return await gasCall({ action: 'saveStores', data: JSON.stringify(STORES) });
 }
 
 
@@ -594,6 +601,13 @@ function lineIdByName(name, store) {
   const u = Object.values(USERS).find(x => x.name === name && (!store || x.store === store) && x.lineUserId)
          || Object.values(USERS).find(x => x.name === name && x.lineUserId);
   return u ? u.lineUserId : null;
+}
+// 依門市文字找對應群組ID（容忍前後空白／是否帶「店」字）。資料來源：STORES（門市群組設定頁）
+function groupIdByStore(store) {
+  if (!store) return null;
+  const key = String(store).trim().replace(/店$/, '');
+  const hit = STORES.find(s => String(s.name).trim().replace(/店$/, '') === key);
+  return hit && hit.groupId ? hit.groupId : null;
 }
 function nowStr() {
   return new Date().toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
@@ -683,6 +697,9 @@ const NAV_CONFIG = {
       { id:'admin_rejected_log', icon:'ti-arrow-back-up', label:'退回紀錄' },
       { id:'notify_log', icon:'ti-bell', label:'通知紀錄' },
     ]},
+    { sec:'系統設定', items:[
+      { id:'store_groups', icon:'ti-users-group', label:'門市群組設定' },
+    ]},
   ],
   finance: [
     { sec:'財務', items:[
@@ -700,6 +717,7 @@ const NAV_CONFIG = {
     ]},
     { sec:'系統設定', items:[
       { id:'user_mgmt', icon:'ti-users', label:'帳號管理' },
+      { id:'store_groups', icon:'ti-users-group', label:'門市群組設定' },
     ]},
   ],
 };
@@ -734,6 +752,7 @@ const SCREEN_TITLES = {
   pending_admin:'待庫存審核', admin_done:'已放行',
   notify_log:'通知紀錄', finance_review:'待列印簽核', admin_rejected_log:'退回紀錄',
   finance_done:'完成歸檔', dashboard:'系統總覽', stats:'月報統計',
+  user_mgmt:'帳號管理', store_groups:'門市群組設定',
 };
 
 function goScreen(s) {
@@ -773,6 +792,7 @@ function renderScreen() {
     history: screenHistory,
     notify_log: screenNotifyLog,
     admin_rejected_log: screenAdminRejectedLog,
+    store_groups: screenStoreGroups,
   };
 
   if (viewingOrder) {
@@ -843,7 +863,9 @@ function screenNew() {
     <div class="alert alert-info"><i class="ti ti-info-circle"></i>提交後，系統將自動通知督導進行線上簽核，無需等待督導巡店到場。</div>
     <div class="flow-bar">${flowHtml('draft')}</div>
     <div class="form-grid">
-      <div class="ff"><label class="flabel">門市</label><input class="finput" id="storeInput" placeholder="05民生"></div>
+      <div class="ff"><label class="flabel">門市</label>${STORES.length
+        ? `<select class="finput" id="storeInput"><option value="" disabled selected>請選擇門市</option>${STORES.map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}</select>`
+        : `<input class="finput" id="storeInput" placeholder="05民生">`}</div>
       <div class="ff"><label class="flabel">申購日期</label><input class="finput" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
       <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" id="empName" placeholder="請輸入申購者姓名"></div>
       <div class="ff"><label class="flabel">申購者員工編號</label><input class="finput" id="empId" placeholder="請輸入員工編號"></div>
@@ -1181,6 +1203,42 @@ function screenNotifyLog() {
 }
 
 // ============================================================
+// 門市群組設定（門市 → LINE 群組ID 對照）
+// ============================================================
+function screenStoreGroups() {
+  const rows = STORES.map((s, i) => `
+    <tr>
+      <td><input class="finput" style="margin:0" value="${(s.name||'').replace(/"/g,'&quot;')}" oninput="STORES[${i}].name=this.value"></td>
+      <td><input class="finput" style="margin:0" placeholder="C 開頭的群組ID" value="${(s.groupId||'').replace(/"/g,'&quot;')}" oninput="STORES[${i}].groupId=this.value"></td>
+      <td style="text-align:center"><button class="btn btn-danger-outline" onclick="removeStoreRow(${i})"><i class="ti ti-trash"></i></button></td>
+    </tr>`).join('');
+  return `
+    <div class="alert alert-info"><i class="ti ti-info-circle"></i>
+      在這裡維護每間門市對應的 LINE 群組。行政放行後，系統會依員購者選的門市，把取貨通知發到對應群組。
+      取得群組ID：把官方帳號機器人加進該門市群組，在群組裡傳一句話，機器人會回覆「C 開頭」的群組ID，貼到下方對應門市即可。
+    </div>
+    <div class="detail-section">
+      <div class="ds-title"><i class="ti ti-users-group"></i>門市群組對照</div>
+      <table class="items-table">
+        <thead><tr><th>門市名稱（例 05民生）</th><th>LINE 群組ID（C 開頭）</th><th style="width:60px">刪除</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="3" style="text-align:center;color:var(--sf-text-muted);padding:18px">尚未新增任何門市，點下方「新增門市」開始</td></tr>`}</tbody>
+      </table>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="btn btn-secondary" onclick="addStoreRow()"><i class="ti ti-plus"></i> 新增門市</button>
+        <button class="btn btn-success" onclick="saveStoreGroups()"><i class="ti ti-device-floppy"></i> 儲存設定</button>
+      </div>
+    </div>`;
+}
+function addStoreRow() { STORES.push({ name:'', groupId:'' }); renderScreen(); }
+function removeStoreRow(i) { STORES.splice(i, 1); renderScreen(); }
+async function saveStoreGroups() {
+  STORES = STORES.filter(s => (s.name||'').trim() !== '');
+  STORES.forEach(s => { s.name = s.name.trim(); s.groupId = (s.groupId||'').trim(); });
+  const ok = await syncSave(saveStores, '門市群組設定已儲存');
+  if (ok) renderScreen();
+}
+
+// ============================================================
 // ORDER DETAIL SCREEN
 // ============================================================
 function screenOrderDetail(o) {
@@ -1466,6 +1524,13 @@ async function doAdminApprove(id) {
     await syncSave(saveOrders, '已放行，已通知門市取貨');
     notify('approved', lineIdByName(o.emp, o.store) || currentUser.lineUserId,
       { orderId: o.id, approverName: currentUser.name, approveTime: _t, pickupMethod: '至門市倉庫憑單取貨' });
+    // 試辦：行政放行後，通知「門市」對應的 LINE 群組（先做 05民生一間）
+    const gid = groupIdByStore(o.store);
+    if (gid) {
+      notify('approved', gid,
+        { orderId: o.id, approverName: currentUser.name, approveTime: _t,
+          pickupMethod: o.emp + ' 的員購單已放行，請至門市倉庫憑單取貨' });
+    }
   }
   document.getElementById('mainContent').innerHTML = screenOrderDetail(o);
   document.getElementById('actionBar').innerHTML = `
