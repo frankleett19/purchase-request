@@ -734,7 +734,7 @@ function renderNav() {
       if (it.id === 'pending_sup') count = ORDERS.filter(o => o.status === 'pending_sup').length;
       else if (it.id === 'pending_admin') count = ORDERS.filter(o => o.status === 'pending_admin').length;
       else if (it.id === 'finance_review') count = ORDERS.filter(o => o.status === 'ready').length;
-      else if (it.id === 'myorders') count = ORDERS.filter(o => o.store === currentUser.store && (o.status === 'pending_sup' || o.status === 'draft')).length;
+      else if (it.id === 'myorders') count = ORDERS.filter(o => o.status === 'pending_sup' || o.status === 'draft').length;
       const b = count > 0 ? `<span class="badge-count">${count}</span>` : '';
       html += `<div class="nav-item${act}" onclick="goScreen('${it.id}')"><i class="ti ${it.icon}"></i>${it.label}${b}</div>`;
     });
@@ -921,7 +921,7 @@ function screenNew() {
 }
 
 function screenMyOrders() {
-  const list = ORDERS.filter(o => o.store === currentUser.store);
+  const list = ORDERS.slice();
   if (!list.length) return `<div style="padding:24px;color:var(--sf-text-muted)">目前沒有申請單。</div>`;
   return `<div class="order-list">${list.map(o => orderCardWithDelete(o)).join('')}</div>`;
 }
@@ -1149,7 +1149,7 @@ function screenStats() {
 }
 
 function screenHistory() {
-  return `<div class="order-list">${ORDERS.filter(o=>o.store===currentUser.store).map(o=>orderCardHtml(o)).join('')}</div>`;
+  return `<div class="order-list">${ORDERS.map(o=>orderCardHtml(o)).join('')}</div>`;
 }
 
 function screenAdminRejectedLog() {
