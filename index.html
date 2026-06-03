@@ -400,10 +400,10 @@ select.finput { cursor: pointer; }
         <div class="sl-text">三花生活館<br><span>員購管理系統</span></div>
       </div>
       <div class="sidebar-user">
-        <div class="user-avatar" id="sideAvatar">王</div>
+        <div class="user-avatar" id="sideAvatar"><i class="ti ti-shopping-cart"></i></div>
         <div class="user-info">
-          <div class="user-name" id="sideName">王曉明</div>
-          <div class="user-role" id="sideRole">店長 — 05民生</div>
+          <div class="user-name" id="sideName">員購者</div>
+          <div class="user-role" id="sideRole">員購者填單</div>
         </div>
         <div class="logout-btn" onclick="doLogout()" title="登出">
           <i class="ti ti-logout"></i>
@@ -630,9 +630,9 @@ async function doLogin() {
     currentUser = { ...ud, username: u };
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appScreen').style.display = 'block';
-    document.getElementById('sideAvatar').textContent = currentUser.avatar;
-    document.getElementById('sideName').textContent = currentUser.role === 'store' ? currentUser.store + '店' : currentUser.name;
-    document.getElementById('sideRole').textContent = currentUser.roleLabel + (currentUser.store ? ' — ' + currentUser.store : '');
+    document.getElementById('sideAvatar').innerHTML = currentUser.role === 'store' ? '<i class="ti ti-shopping-cart"></i>' : currentUser.avatar;
+    document.getElementById('sideName').textContent = currentUser.role === 'store' ? '員購者' : currentUser.name;
+    document.getElementById('sideRole').textContent = currentUser.role === 'store' ? '員購者填單' : currentUser.roleLabel;
     const defaults = { store:'new', supervisor:'pending_sup', admin:'pending_admin', finance:'finance_review', ceo:'dashboard' };
     currentScreen = defaults[currentUser.role] || 'new';
     viewingOrder = null;
@@ -798,7 +798,7 @@ function sLbl(s) {
 }
 
 function flowHtml(status) {
-  const steps = ['店長填單','督導簽核','行政審核','通知取貨','財務紙本'];
+  const steps = ['員購者填單','督導簽核','行政審核','通知取貨','財務紙本'];
   const idx = { pending_sup:1, pending_admin:2, ready:3, approved:4 };
   const cur = idx[status] || 0;
   return steps.map((s,i) => {
@@ -843,7 +843,7 @@ function screenNew() {
     <div class="alert alert-info"><i class="ti ti-info-circle"></i>提交後，系統將自動通知督導進行線上簽核，無需等待督導巡店到場。</div>
     <div class="flow-bar">${flowHtml('draft')}</div>
     <div class="form-grid">
-      <div class="ff"><label class="flabel">門市</label><input class="finput" value="${currentUser.store}" readonly></div>
+      <div class="ff"><label class="flabel">門市</label><input class="finput" id="storeInput" placeholder="05民生"></div>
       <div class="ff"><label class="flabel">申購日期</label><input class="finput" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
       <div class="ff"><label class="flabel">申購者姓名</label><input class="finput" id="empName" placeholder="請輸入申購者姓名"></div>
       <div class="ff"><label class="flabel">申購者員工編號</label><input class="finput" id="empId" placeholder="請輸入員工編號"></div>
@@ -1345,6 +1345,8 @@ async function doSubmitNew() {
   if (isSubmitting) return;
   const empName = document.getElementById('empName')?.value?.trim();
   const empId = document.getElementById('empId')?.value?.trim();
+  const storeVal = document.getElementById('storeInput')?.value?.trim();
+  if (!storeVal) { alert('請填寫門市'); return; }
   if (!empName) { alert('請填寫申購者姓名'); return; }
   if (!empId) { alert('請填寫申購者員工編號'); return; }
   const total = parseInt(document.getElementById('grandTotal')?.textContent.replace(/[^0-9]/g,'')) || 0;
@@ -1371,12 +1373,12 @@ async function doSubmitNew() {
   if (errors.length) { toast(errors[0], 'error'); return; }
   if (!items.length) { toast('請至少填寫一項有效商品', 'error'); return; }
 
-  if (!confirm(`確定要提交申請單？\n\n店別：${currentUser.store}店\n申購者：${empName}（${empId}）\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
+  if (!confirm(`確定要提交申請單？\n\n門市：${storeVal}\n申購者：${empName}（${empId}）\n品項數：${items.length} 項\n合計金額：NT$ ${total.toLocaleString()}\n\n提交後將通知督導進行線上簽核。`)) return;
 
   const newId = 'EP' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(ORDERS.length+1).padStart(3,'0');
   const newOrder = {
     id: newId,
-    store: currentUser.store,
+    store: storeVal,
     emp: empName,
     empId: empId,
     date: new Date().toLocaleDateString('zh-TW'),
@@ -1390,7 +1392,7 @@ async function doSubmitNew() {
   const ok = await syncSave(saveOrders, '申請單已送出，已通知督導簽核');
   isSubmitting = false;
   if (!ok) { ORDERS.shift(); return; }
-  notify('submitted', currentUser.lineUserId, { empName, store: currentUser.store, submitTime: newOrder.date, orderId: newId });
+  notify('submitted', currentUser.lineUserId, { empName, store: storeVal, submitTime: newOrder.date, orderId: newId });
   notify('pending_review', lineIdsByRole('supervisor'), { empName, submitTime: newOrder.date, pendingCount: ORDERS.filter(o => o.status === 'pending_sup').length });
   goScreen('myorders');
 }
