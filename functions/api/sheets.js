@@ -33,24 +33,23 @@ export async function onRequest(context) {
       params = Object.fromEntries(url.searchParams.entries());
     }
 
-    // 以 POST 轉發給 GAS（body 沒有長度限制，且 server 端呼叫沒有 CORS）
-    const resp = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
-      redirect: 'follow',
-    });
+    // 移除使用者物件中的敏感欄位（密碼）。lineUserId 保留給通知用。
+    const stripPass = (users) => {
+      if (!users || typeof users !== 'object') return users;
+      const out = {};
+      for (const [k, v] of Object.entries(users)) {
+        if (v && typeof v === 'object') {
+          const { pass, password, ...rest } = v;
+          out[k] = rest;
+        } else {
+          out[k] = v;
+        }
+      }
+      return out;
+    };
 
-    const text = await resp.text();
-    let payload;
-    try {
-      payload = JSON.parse(text);
-    } catch (_) {
-      payload = { ok: resp.ok, raw: text };
-    }
-
-    return new Response(JSON.stringify(payload), { status: 200, headers: CORS });
-  } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), { status: 500, headers: CORS });
-  }
-}
+    // 共用：向 GAS 取得完整資料
+    const fetchGas = async (body) => {
+      const r = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json'

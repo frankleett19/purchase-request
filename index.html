@@ -632,16 +632,11 @@ function fillLogin(u, p) {
 async function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value.trim();
-  // 先用預設帳號驗證，同時載入最新帳號資料
-  const localCheck = USERS[u];
-  if (!localCheck || localCheck.pass !== p) {
-    // 嘗試從 Sheets 載入最新帳號再驗證
-    await loadFromSheets();
-  }
-  const ud = USERS[u];
-  if (ud && ud.pass === p) {
+  // 伺服器端驗證：密碼不再下載到瀏覽器
+  const res = await gasCall({ action: 'login', username: u, password: p });
+  if (res && res.ok && res.user) {
     if (!dataLoaded) await loadFromSheets();
-    currentUser = { ...ud, username: u };
+    currentUser = { ...res.user, username: u };
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appScreen').style.display = 'block';
     document.getElementById('sideAvatar').innerHTML = currentUser.role === 'store' ? '<i class="ti ti-shopping-cart"></i>' : currentUser.avatar;
@@ -1091,7 +1086,8 @@ function editUser(uid) {
   document.getElementById('fUid').value = uid;
   document.getElementById('fUid').disabled = true;
   document.getElementById('fName').value = u.name;
-  document.getElementById('fPass').value = u.pass;
+  document.getElementById('fPass').value = '';
+  document.getElementById('fPass').placeholder = '留空＝密碼不變更';
   document.getElementById('fRole').value = u.role;
   document.getElementById('fStore').value = u.store;
   document.getElementById('fEmpId').value = u.empId || '';
@@ -1107,7 +1103,9 @@ async function saveUser() {
   const editUid = document.getElementById('editUid').value;
   const uid = editUid || document.getElementById('fUid').value.trim();
   const name = document.getElementById('fName').value.trim();
-  const pass = document.getElementById('fPass').value.trim() || '1234';
+  const passInput = document.getElementById('fPass').value.trim();
+  // 編輯時留空＝沿用既有密碼（後端保留）；新增時預設 1234
+  const pass = passInput || (editUid ? '' : '1234');
   const role = document.getElementById('fRole').value;
   const store = document.getElementById('fStore').value.trim();
   const empId = document.getElementById('fEmpId').value.trim();
@@ -1651,3 +1649,4 @@ function doPrint(id) {
 </script>
 </body>
 </html>
+                                                                                                                                                        
