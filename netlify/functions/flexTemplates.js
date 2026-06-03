@@ -28,7 +28,7 @@ function bubble(headerColor, title, subtitle, bodyContents, footerButtons) {
     contents: [{ type: 'text', text: title, color: '#FFFFFF', weight: 'bold', size: 'lg', wrap: true }] };
   if (subtitle) header.contents.push({ type: 'text', text: subtitle, color: '#CCCCCC', size: 'xs', margin: 'sm' });
   return {
-    type: 'bubble', size: 'full',
+    type: 'bubble', size: 'giga',
     header: header,
     body: { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '16px', contents: bodyContents },
     footer: { type: 'box', layout: 'vertical', spacing: 'sm', paddingAll: '12px', contents: footerButtons }
