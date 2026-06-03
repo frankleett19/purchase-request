@@ -52,4 +52,55 @@ export async function onRequest(context) {
     const fetchGas = async (body) => {
       const r = await fetch(GAS_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json'
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        redirect: 'follow',
+      });
+      const t = await r.text();
+      try { return { ok: r.ok, data: JSON.parse(t) }; }
+      catch (_) { return { ok: r.ok, data: { ok: r.ok, raw: t } }; }
+    };
+
+    // ── 伺服器端登入：驗證帳密，回傳不含密碼的使用者 ──
+    if (params.action === 'login') {
+      const username = String(params.username || '').trim();
+      const password = String(params.password || '');
+      const { data } = await fetchGas({ action: 'getAll' });
+      const users = (data && data.users) || {};
+      const u = users[username];
+      const valid = u && String(u.pass ?? u.password ?? '') === password;
+      if (!valid) {
+        return new Response(JSON.stringify({ ok: false, error: '帳號或密碼錯誤' }), { status: 200, headers: CORS });
+      }
+      const { pass, password: _pw, ...safeUser } = u;
+      return new Response(JSON.stringify({ ok: true, username, user: safeUser }), { status: 200, headers: CORS });
+    }
+
+    // ── 儲存帳號：保留既有密碼（前端不再持有明文密碼）──
+    if (params.action === 'saveUsers') {
+      let incoming = {};
+      try { incoming = JSON.parse(params.data || '{}'); } catch (_) { incoming = {}; }
+      const { data: cur } = await fetchGas({ action: 'getAll' });
+      const existing = (cur && cur.users) || {};
+      for (const [uid, u] of Object.entries(incoming)) {
+        if (!u || typeof u !== 'object') continue;
+        const hasPass = u.pass != null && String(u.pass).length > 0;
+        if (!hasPass) {
+          // 沿用既有密碼；全新帳號則預設 1234
+          u.pass = (existing[uid] && existing[uid].pass) || '1234';
+        }
+      }
+      const merged = { ...params, data: JSON.stringify(incoming) };
+      const { data: saveRes } = await fetchGas(merged);
+      return new Response(JSON.stringify(saveRes), { status: 200, headers: CORS });
+    }
+
+    // ── 其他動作：照常轉發 GAS，但 getAll 回傳前濾掉密碼 ──
+    const { ok, data: payload } = await fetchGas(params);
+    if (payload && payload.users) payload.users = stripPass(payload.users);
+
+    return new Response(JSON.stringify(payload), { status: 200, headers: CORS });
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: String(err) }), { status: 500, headers: CORS });
+  }
+}
